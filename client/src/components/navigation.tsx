@@ -45,6 +45,7 @@ export function Navigation({ user }: NavigationProps) {
   };
 
   const getUserInitials = (user: AuthUser): string => {
+    if (!user?.username) return "U";
     return user.username.slice(0, 2).toUpperCase();
   };
 
