@@ -111,21 +111,33 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
 
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
   const streamingUrl = googleDriveService.getStreamingUrl(video.googleDriveFileId);
+  const directUrl = googleDriveService.getDirectUrl(video.googleDriveFileId);
 
   return (
     <div className="space-y-8">
       <Card className="bg-slate-800 overflow-hidden shadow-lg">
         {/* Video Player */}
         <div className="relative bg-black video-aspect">
-          <iframe
-            src={streamingUrl}
+          {/* Fallback to HTML5 video if iframe fails */}
+          <video
             className="w-full h-full"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen={true}
-            frameBorder="0"
-            title={video.title}
-            sandbox="allow-scripts allow-same-origin allow-presentation"
-          />
+            controls
+            poster={googleDriveService.getThumbnailUrl(video.googleDriveFileId, 800)}
+            preload="metadata"
+            onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
+            onEnded={handleVideoEnd}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+          >
+            <source src={directUrl} type="video/mp4" />
+            <source src={streamingUrl} type="video/mp4" />
+            <p className="text-white p-4">
+              브라우저가 HTML5 동영상을 지원하지 않습니다. 
+              <a href={streamingUrl} className="text-aviation-blue hover:underline" target="_blank" rel="noopener noreferrer">
+                Google Drive에서 직접 보기
+              </a>
+            </p>
+          </video>
           
           {/* Video Controls Overlay */}
           <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
