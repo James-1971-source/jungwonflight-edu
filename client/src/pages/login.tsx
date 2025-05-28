@@ -21,7 +21,7 @@ export default function Login() {
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: (user) => {
-      queryClient.setQueryData(["/api/me"], { user });
+      queryClient.setQueryData(["/api/me"], user);
       setLocation("/dashboard");
       toast({
         title: "로그인 성공",
