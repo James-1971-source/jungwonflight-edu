@@ -24,7 +24,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthUser> {
   try {
     const response = await apiRequest("POST", "/api/login", credentials);
     const data = await response.json();
-    return data.user;
+    return data;
   } catch (error) {
     throw new AuthError("로그인에 실패했습니다. 사용자명과 비밀번호를 확인해주세요.");
   }
