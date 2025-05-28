@@ -42,7 +42,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
     const response = await apiRequest("GET", "/api/me");
     const data = await response.json();
-    return data.user;
+    return data;
   } catch (error) {
     return null;
   }
