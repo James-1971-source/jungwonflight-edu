@@ -21,6 +21,9 @@ export function Navigation({ user }: NavigationProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // 디버깅용 로그 추가
+  console.log('Navigation user:', user);
+
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
