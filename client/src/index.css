@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 222 84% 5%; /* #0f172a */
+  --foreground: 210 40% 98%; /* #f8fafc */
+  --muted: 217 32% 17%; /* #1e293b */
+  --muted-foreground: 215 20% 65%; /* #94a3b8 */
+  --popover: 222 84% 5%; /* #0f172a */
+  --popover-foreground: 210 40% 98%; /* #f8fafc */
+  --card: 222 84% 5%; /* #0f172a */
+  --card-foreground: 210 40% 98%; /* #f8fafc */
+  --border: 217 32% 17%; /* #1e293b */
+  --input: 217 32% 17%; /* #1e293b */
+  --primary: 213 94% 68%; /* #3b82f6 */
+  --primary-foreground: 213 100% 97%; /* #eff6ff */
+  --secondary: 217 32% 17%; /* #1e293b */
+  --secondary-foreground: 210 40% 98%; /* #f8fafc */
+  --accent: 217 32% 17%; /* #1e293b */
+  --accent-foreground: 210 40% 98%; /* #f8fafc */
+  --destructive: 0 84% 60%; /* #ef4444 */
+  --destructive-foreground: 210 40% 98%; /* #f8fafc */
+  --ring: 213 94% 68%; /* #3b82f6 */
+  --radius: 0.5rem;
+  --aviation-blue: 213 94% 68%; /* #3b82f6 */
+  --aviation-orange: 25 95% 53%; /* #f59e0b */
+}
+
+.dark {
+  --background: 222 84% 5%; /* #0f172a */
+  --foreground: 210 40% 98%; /* #f8fafc */
+  --muted: 217 32% 17%; /* #1e293b */
+  --muted-foreground: 215 20% 65%; /* #94a3b8 */
+  --popover: 222 84% 5%; /* #0f172a */
+  --popover-foreground: 210 40% 98%; /* #f8fafc */
+  --card: 222 84% 5%; /* #0f172a */
+  --card-foreground: 210 40% 98%; /* #f8fafc */
+  --border: 217 32% 17%; /* #1e293b */
+  --input: 217 32% 17%; /* #1e293b */
+  --primary: 213 94% 68%; /* #3b82f6 */
+  --primary-foreground: 213 100% 97%; /* #eff6ff */
+  --secondary: 217 32% 17%; /* #1e293b */
+  --secondary-foreground: 210 40% 98%; /* #f8fafc */
+  --accent: 217 32% 17%; /* #1e293b */
+  --accent-foreground: 210 40% 98%; /* #f8fafc */
+  --destructive: 0 84% 60%; /* #ef4444 */
+  --destructive-foreground: 210 40% 98%; /* #f8fafc */
+  --ring: 213 94% 68%; /* #3b82f6 */
+  --radius: 0.5rem;
+  --aviation-blue: 213 94% 68%; /* #3b82f6 */
+  --aviation-orange: 25 95% 53%; /* #f59e0b */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+
+  html {
+    @apply dark;
+  }
+}
+
+@layer components {
+  .aviation-gradient {
+    background: linear-gradient(135deg, hsl(var(--aviation-blue)) 0%, hsl(var(--aviation-orange)) 100%);
+  }
+
+  .video-aspect {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+@layer utilities {
+  .text-aviation-blue {
+    color: hsl(var(--aviation-blue));
+  }
+
+  .text-aviation-orange {
+    color: hsl(var(--aviation-orange));
+  }
+
+  .bg-aviation-blue {
+    background-color: hsl(var(--aviation-blue));
+  }
+
+  .bg-aviation-orange {
+    background-color: hsl(var(--aviation-orange));
+  }
+
+  .border-aviation-blue {
+    border-color: hsl(var(--aviation-blue));
+  }
+
+  .hover\:bg-aviation-blue:hover {
+    background-color: hsl(var(--aviation-blue));
+  }
+
+  .hover\:bg-aviation-orange:hover {
+    background-color: hsl(var(--aviation-orange));
+  }
+}
