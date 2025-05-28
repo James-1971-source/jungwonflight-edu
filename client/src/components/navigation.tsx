@@ -21,9 +21,7 @@ export function Navigation({ user }: NavigationProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // 디버깅용 로그
-  console.log('Navigation user role:', user?.role);
-  console.log('Navigation user full:', user);
+
 
 
 

@@ -120,8 +120,11 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
           <iframe
             src={streamingUrl}
             className="w-full h-full"
-            allow="autoplay"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen={true}
+            frameBorder="0"
             title={video.title}
+            sandbox="allow-scripts allow-same-origin allow-presentation"
           />
           
           {/* Video Controls Overlay */}

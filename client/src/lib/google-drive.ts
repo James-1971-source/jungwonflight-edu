@@ -49,7 +49,8 @@ export class GoogleDriveService {
   }
 
   getStreamingUrl(fileId: string): string {
-    return `https://drive.google.com/file/d/${fileId}/preview`;
+    // Google Drive embed URL that works better with CSP
+    return `https://drive.google.com/file/d/${fileId}/preview?usp=embed_facebook`;
   }
 
   getDirectUrl(fileId: string): string {
