@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useParams } from "wouter";
 import { Navigation } from "@/components/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { VideoPlayer } from "@/components/video-player";
@@ -7,21 +8,29 @@ import { VideoList } from "@/components/video-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import type { Video } from "@shared/schema";
+import type { Video, Category } from "@shared/schema";
 import { getCurrentUser } from "@/lib/auth";
 
 export default function Dashboard() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const { id: categoryId } = useParams();
 
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["/api/me"],
     queryFn: getCurrentUser,
   });
 
-  const { data: videos = [], isLoading: videosLoading, error: videosError } = useQuery<Video[]>({
-    queryKey: ["/api/videos"],
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
     enabled: !!user,
   });
+
+  const { data: videos = [], isLoading: videosLoading, error: videosError } = useQuery<Video[]>({
+    queryKey: categoryId ? ["/api/videos", { categoryId }] : ["/api/videos"],
+    enabled: !!user,
+  });
+
+  const currentCategory = categoryId ? categories.find(c => c.id === parseInt(categoryId)) : null;
 
   const handleVideoSelect = (video: Video) => {
     setSelectedVideo(video);
@@ -74,8 +83,12 @@ export default function Dashboard() {
         <main className="flex-1 p-6">
           {/* Header Section */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">기초 비행 이론</h1>
-            <p className="text-slate-400">항공기 운항의 기본 원리를 학습합니다</p>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              {currentCategory ? currentCategory.name : "전체 강의"}
+            </h1>
+            <p className="text-slate-400">
+              {currentCategory ? currentCategory.description : "모든 카테고리의 강의를 확인하실 수 있습니다"}
+            </p>
           </div>
 
           {videosError && (

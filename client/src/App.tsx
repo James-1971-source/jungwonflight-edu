@@ -71,6 +71,11 @@ function Router() {
           <VideoPlayerPage />
         </ProtectedRoute>
       </Route>
+      <Route path="/category/:id">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
       <Route path="/admin">
         <AdminRoute>
           <Admin />
