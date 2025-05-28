@@ -116,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/me", requireAuth, (req, res) => {
-    res.json({ user: req.user });
+    res.json(req.user);
   });
 
   // User registration (admin only)
