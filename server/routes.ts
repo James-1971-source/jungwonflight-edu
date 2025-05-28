@@ -327,6 +327,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Setup initial admin (only if no admin exists)
+  app.post("/api/setup-admin", async (req, res) => {
+    try {
+      // Check if any admin already exists
+      const existingAdmin = await storage.getUserByRole("admin");
+      if (existingAdmin) {
+        return res.status(400).json({ message: "관리자 계정이 이미 존재합니다." });
+      }
+
+      const { username, email, password } = req.body;
+      if (!username || !email || !password) {
+        return res.status(400).json({ message: "모든 필드를 입력해주세요." });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      const admin = await storage.createUser({
+        username,
+        email,
+        password: hashedPassword,
+        role: "admin",
+        isApproved: true
+      });
+
+      res.status(201).json({ message: "관리자 계정이 생성되었습니다." });
+    } catch (error) {
+      res.status(500).json({ message: "관리자 계정 생성 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Admin user management routes
+  app.get("/api/users", requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      // Remove passwords from response for security
+      const safeUsers = users.map(user => {
+        const { password, ...safeUser } = user;
+        return safeUser;
+      });
+      res.json(safeUsers);
+    } catch (error) {
+      res.status(500).json({ message: "사용자 목록을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
   // Google Drive API integration routes
   app.get("/api/google-drive/validate-key", requireAdmin, async (req, res) => {
     try {

@@ -16,11 +16,11 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined>;
-  
+
   // Categories
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
-  
+
   // Videos
   getVideos(): Promise<Video[]>;
   getVideosByCategory(categoryId: number): Promise<Video[]>;
@@ -28,12 +28,12 @@ export interface IStorage {
   createVideo(video: InsertVideo): Promise<Video>;
   updateVideo(id: number, updates: Partial<InsertVideo>): Promise<Video | undefined>;
   deleteVideo(id: number): Promise<boolean>;
-  
+
   // User Progress
   getUserProgress(userId: number): Promise<UserProgress[]>;
   getVideoProgress(userId: number, videoId: number): Promise<UserProgress | undefined>;
   updateProgress(userId: number, videoId: number, progress: Partial<InsertUserProgress>): Promise<UserProgress>;
-  
+
   // User Notes
   getUserNotes(userId: number, videoId: number): Promise<UserNote[]>;
   createNote(note: InsertUserNote): Promise<UserNote>;
@@ -146,7 +146,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateProgress(userId: number, videoId: number, progress: Partial<InsertUserProgress>): Promise<UserProgress> {
     const existing = await this.getVideoProgress(userId, videoId);
-    
+
     if (existing) {
       const [updated] = await db
         .update(userProgress)
@@ -192,6 +192,15 @@ export class DatabaseStorage implements IStorage {
   async deleteNote(id: number): Promise<boolean> {
     const result = await db.delete(userNotes).where(eq(userNotes.id, id));
     return result.rowCount > 0;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async getUserByRole(role: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.role, role));
+    return user || undefined;
   }
 }
 

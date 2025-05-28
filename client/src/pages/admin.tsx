@@ -25,14 +25,12 @@ import {
   HardDrive, 
   Plus, 
   Edit,
-  AlertCircle,
-  X
+  AlertCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
 import type { Category, Video as VideoType, User } from "@shared/schema";
-import { PlusCircle, Upload, FolderPlus, CheckCircle, XCircle } from "lucide-react";
 
 interface VideoFormData {
   title: string;
@@ -67,7 +65,7 @@ export default function Admin() {
   });
   const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
-
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -83,11 +81,6 @@ export default function Admin() {
 
   const { data: videos = [] } = useQuery<VideoType[]>({
     queryKey: ["/api/videos"],
-    enabled: !!user && user.role === 'admin',
-  });
-
-  const { data: users = [] } = useQuery<User[]>({
-    queryKey: ["/api/users"],
     enabled: !!user && user.role === 'admin',
   });
 
@@ -120,7 +113,6 @@ export default function Admin() {
   const userMutation = useMutation({
     mutationFn: (data: UserFormData) => apiRequest("POST", "/api/users", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsUserDialogOpen(false);
       setUserForm({
         username: "",
@@ -200,7 +192,7 @@ export default function Admin() {
 
   const mockStats = {
     totalVideos: videos.length,
-    totalStudents: users.filter(u => u.role === 'student').length,
+    totalStudents: 15,
     totalWatchTime: "847시간",
     storageUsed: "1.2TB"
   };
@@ -208,7 +200,7 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-slate-900">
       <Navigation user={user} />
-
+      
       <main className="p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">관리자 대시보드</h1>
@@ -228,7 +220,7 @@ export default function Admin() {
               </div>
             </CardContent>
           </Card>
-
+          
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -240,7 +232,7 @@ export default function Admin() {
               </div>
             </CardContent>
           </Card>
-
+          
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -252,7 +244,7 @@ export default function Admin() {
               </div>
             </CardContent>
           </Card>
-
+          
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -466,26 +458,8 @@ export default function Admin() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {users.slice(0, 5).map((userData) => (
-                  <div key={userData.id} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium">{userData.username}</p>
-                      <p className="text-slate-300 text-sm">{userData.email}</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge 
-                        variant={userData.isApproved ? "default" : "secondary"}
-                        className={userData.isApproved ? "bg-green-600" : "bg-yellow-600"}
-                      >
-                        {userData.isApproved ? "승인됨" : "대기중"}
-                      </Badge>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-slate-400 text-center py-8">
+                교육생 목록이 여기에 표시됩니다
               </div>
             </CardContent>
           </Card>
