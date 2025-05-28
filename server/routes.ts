@@ -328,6 +328,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Google Drive API integration routes
+  app.get("/api/google-drive/validate-key", requireAdmin, async (req, res) => {
+    try {
+      const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
+      if (!apiKey) {
+        return res.status(400).json({ 
+          message: "Google Drive API 키가 설정되지 않았습니다.",
+          hasKey: false 
+        });
+      }
+
+      // Test API key with a simple request to check permissions
+      const testResponse = await fetch(`https://www.googleapis.com/drive/v3/about?fields=user&key=${apiKey}`);
+      
+      if (testResponse.ok) {
+        const data = await testResponse.json();
+        res.json({
+          message: "API 키가 유효하며 공개 데이터 읽기 권한이 있습니다.",
+          hasKey: true,
+          hasPermission: true,
+          user: data.user
+        });
+      } else {
+        const errorData = await testResponse.json();
+        res.json({
+          message: "API 키 권한 확인 실패",
+          hasKey: true,
+          hasPermission: false,
+          error: errorData.error
+        });
+      }
+    } catch (error) {
+      res.status(500).json({ 
+        message: "API 키 유효성 검사 중 오류가 발생했습니다.",
+        error: error.message 
+      });
+    }
+  });
+
   app.get("/api/google-drive/files", requireAdmin, async (req, res) => {
     try {
       // This endpoint would integrate with Google Drive API

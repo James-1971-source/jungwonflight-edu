@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
 import type { Category, Video as VideoType, User } from "@shared/schema";
+import { PlusCircle, Upload, FolderPlus, CheckCircle, XCircle } from "lucide-react";
 
 interface VideoFormData {
   title: string;
@@ -66,7 +67,7 @@ export default function Admin() {
   });
   const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -207,7 +208,7 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-slate-900">
       <Navigation user={user} />
-      
+
       <main className="p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">관리자 대시보드</h1>
@@ -227,7 +228,7 @@ export default function Admin() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -239,7 +240,7 @@ export default function Admin() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -251,7 +252,7 @@ export default function Admin() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
