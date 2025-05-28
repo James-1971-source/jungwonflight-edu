@@ -103,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes
   app.post("/api/login", passport.authenticate('local'), (req, res) => {
-    res.json({ user: req.user });
+    res.json(req.user);
   });
 
   app.post("/api/logout", (req, res) => {
