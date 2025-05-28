@@ -118,26 +118,32 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
       <Card className="bg-slate-800 overflow-hidden shadow-lg">
         {/* Video Player */}
         <div className="relative bg-black video-aspect">
-          {/* Fallback to HTML5 video if iframe fails */}
-          <video
-            className="w-full h-full"
-            controls
-            poster={googleDriveService.getThumbnailUrl(video.googleDriveFileId, 800)}
-            preload="metadata"
-            onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
-            onEnded={handleVideoEnd}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-          >
-            <source src={directUrl} type="video/mp4" />
-            <source src={streamingUrl} type="video/mp4" />
-            <p className="text-white p-4">
-              브라우저가 HTML5 동영상을 지원하지 않습니다. 
-              <a href={streamingUrl} className="text-aviation-blue hover:underline" target="_blank" rel="noopener noreferrer">
-                Google Drive에서 직접 보기
-              </a>
-            </p>
-          </video>
+          {/* Google Drive Video Preview */}
+          <div className="w-full h-full flex items-center justify-center bg-slate-800">
+            <div className="text-center p-8">
+              <img 
+                src={googleDriveService.getThumbnailUrl(video.googleDriveFileId, 800)}
+                alt={video.title}
+                className="w-full max-w-md mx-auto rounded-lg mb-6 shadow-lg"
+              />
+              <h3 className="text-xl font-semibold text-white mb-4">{video.title}</h3>
+              <p className="text-slate-300 mb-6">Google Drive에서 고화질 동영상을 시청하세요</p>
+              <div className="space-y-3">
+                <a
+                  href={`https://drive.google.com/file/d/${video.googleDriveFileId}/view`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-6 py-3 bg-aviation-blue hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  <Play className="w-5 h-5 mr-2" />
+                  Google Drive에서 시청하기
+                </a>
+                <div className="text-sm text-slate-400">
+                  새 탭에서 열립니다
+                </div>
+              </div>
+            </div>
+          </div>
           
           {/* Video Controls Overlay */}
           <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
