@@ -36,9 +36,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     { usernameField: 'username' },
     async (username, password, done) => {
       try {
-        const user = await storage.getUserByUsername(username);
+        // Try to find user by username first, then by email
+        let user = await storage.getUserByUsername(username);
         if (!user) {
-          return done(null, false, { message: '잘못된 사용자명입니다.' });
+          user = await storage.getUserByEmail(username);
+        }
+        
+        if (!user) {
+          return done(null, false, { message: '잘못된 사용자명 또는 이메일입니다.' });
         }
 
         if (!user.isApproved) {
