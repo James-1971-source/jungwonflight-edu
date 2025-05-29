@@ -61,11 +61,6 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      <Route path="/dashboard">
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      </Route>
       <Route path="/video/:id">
         <ProtectedRoute>
           <VideoPlayerPage />
@@ -80,6 +75,11 @@ function Router() {
         <AdminRoute>
           <Admin />
         </AdminRoute>
+      </Route>
+      <Route path="/dashboard">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
       </Route>
       <Route path="/">
         <Redirect to="/dashboard" />

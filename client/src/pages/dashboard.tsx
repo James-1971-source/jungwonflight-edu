@@ -29,7 +29,12 @@ export default function Dashboard() {
   });
 
   const { data: videos = [], isLoading: videosLoading, error: videosError } = useQuery<Video[]>({
-    queryKey: categoryId ? ["/api/videos", { categoryId }] : ["/api/videos"],
+    queryKey: categoryId ? ["/api/videos", "category", categoryId] : ["/api/videos"],
+    queryFn: () => {
+      const url = categoryId ? `/api/videos?categoryId=${categoryId}` : '/api/videos';
+      console.log('Fetching videos from:', url);
+      return fetch(url).then(res => res.json());
+    },
     enabled: !!user,
   });
 
