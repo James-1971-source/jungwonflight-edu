@@ -14,6 +14,9 @@ import { getCurrentUser } from "@/lib/auth";
 export default function Dashboard() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const { id: categoryId } = useParams();
+  
+  // 디버깅용 로그
+  console.log('Dashboard categoryId:', categoryId);
 
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["/api/me"],
