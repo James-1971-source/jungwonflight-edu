@@ -119,6 +119,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(req.user);
   });
 
+  // Get all users (admin only)
+  app.get("/api/users", requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      // Remove passwords from response
+      const safeUsers = users.map(user => {
+        const { password, ...safeUser } = user;
+        return safeUser;
+      });
+      res.json(safeUsers);
+    } catch (error) {
+      res.status(500).json({ message: "사용자 목록을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
   // User registration (admin only)
   app.post("/api/users", requireAdmin, async (req, res) => {
     try {

@@ -84,6 +84,11 @@ export default function Admin() {
     enabled: !!user && user.role === 'admin',
   });
 
+  const { data: users = [] } = useQuery<any[]>({
+    queryKey: ["/api/users"],
+    enabled: !!user && user.role === 'admin',
+  });
+
   const videoMutation = useMutation({
     mutationFn: (data: VideoFormData) => apiRequest("POST", "/api/videos", data),
     onSuccess: () => {
@@ -113,6 +118,7 @@ export default function Admin() {
   const userMutation = useMutation({
     mutationFn: (data: UserFormData) => apiRequest("POST", "/api/users", data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsUserDialogOpen(false);
       setUserForm({
         username: "",
@@ -192,7 +198,7 @@ export default function Admin() {
 
   const mockStats = {
     totalVideos: videos.length,
-    totalStudents: 15,
+    totalStudents: users.filter(u => u.role === 'student').length,
     totalWatchTime: "847시간",
     storageUsed: "1.2TB"
   };
@@ -458,8 +464,43 @@ export default function Admin() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-slate-400 text-center py-8">
-                교육생 목록이 여기에 표시됩니다
+              <div className="space-y-3">
+                {users.filter(user => user.role === 'student').length === 0 ? (
+                  <div className="text-slate-400 text-center py-8">
+                    등록된 교육생이 없습니다
+                  </div>
+                ) : (
+                  users
+                    .filter(user => user.role === 'student')
+                    .slice(0, 5)
+                    .map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                        <div>
+                          <p className="text-white font-medium">{student.username}</p>
+                          <p className="text-slate-300 text-sm">{student.email}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              student.isApproved 
+                                ? 'bg-green-900 text-green-300' 
+                                : 'bg-red-900 text-red-300'
+                            }`}>
+                              {student.isApproved ? '승인됨' : '승인 대기'}
+                            </span>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))
+                )}
+                {users.filter(user => user.role === 'student').length > 5 && (
+                  <div className="text-center pt-3">
+                    <Button variant="ghost" className="text-slate-400 hover:text-white">
+                      더 보기 ({users.filter(user => user.role === 'student').length - 5}명 더)
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
