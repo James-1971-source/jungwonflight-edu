@@ -132,10 +132,11 @@ export default function Admin() {
         description: "새 교육생이 성공적으로 추가되었습니다.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.message || "사용자 생성 중 오류가 발생했습니다.";
       toast({
         title: "오류",
-        description: "사용자 생성 중 오류가 발생했습니다.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
