@@ -23,6 +23,10 @@ export function Sidebar() {
     queryKey: ["/api/videos"],
   });
 
+  const { data: progress = [] } = useQuery<any[]>({
+    queryKey: ["/api/progress"],
+  });
+
   const getCategoryIcon = (name: string) => {
     switch (name.toLowerCase()) {
       case "기초 비행 이론":
@@ -40,7 +44,10 @@ export function Sidebar() {
     }
   };
 
-  const mockProgress = 68; // This would come from user progress data
+  // Calculate overall progress
+  const totalVideos = videos.length;
+  const completedVideos = progress.filter(p => p.completed).length;
+  const overallProgress = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
 
   return (
     <aside className="w-64 bg-slate-800 min-h-screen border-r border-slate-700">
@@ -85,9 +92,9 @@ export function Sidebar() {
           <div className="bg-slate-700 rounded-lg p-4">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-slate-300">전체 진도</span>
-              <span className="text-aviation-blue font-medium">{mockProgress}%</span>
+              <span className="text-aviation-blue font-medium">{overallProgress}%</span>
             </div>
-            <Progress value={mockProgress} className="h-2" />
+            <Progress value={overallProgress} className="h-2" />
           </div>
         </div>
       </div>
