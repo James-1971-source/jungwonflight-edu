@@ -19,6 +19,10 @@ export function Sidebar() {
     queryKey: ["/api/categories"],
   });
 
+  const { data: videos = [] } = useQuery<any[]>({
+    queryKey: ["/api/videos"],
+  });
+
   const getCategoryIcon = (name: string) => {
     switch (name.toLowerCase()) {
       case "기초 비행 이론":
@@ -45,7 +49,7 @@ export function Sidebar() {
         <ul className="space-y-2">
           {categories.map((category) => {
             const Icon = getCategoryIcon(category.name);
-            const videoCount = Math.floor(Math.random() * 15) + 5; // Mock video count
+            const videoCount = videos.filter(video => video.categoryId === category.id).length;
             const isActive = location === `/category/${category.id}`;
             
             return (
