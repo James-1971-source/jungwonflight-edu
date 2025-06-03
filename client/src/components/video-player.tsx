@@ -139,8 +139,21 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
                   <Play className="w-5 h-5 mr-2" />
                   Google Drive에서 시청하기
                 </a>
+                <Button
+                  onClick={() => {
+                    progressMutation.mutate({
+                      videoId: video.id,
+                      watchedDuration: video.duration || 0,
+                      completed: true,
+                    });
+                  }}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors relative z-20"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  ✓ 시청 완료 표시
+                </Button>
                 <div className="text-sm text-slate-400">
-                  새 탭에서 열립니다
+                  동영상 시청 후 완료 버튼을 클릭하세요
                 </div>
               </div>
             </div>
