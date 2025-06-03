@@ -184,41 +184,53 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
       <Card className="bg-slate-800 overflow-hidden shadow-lg">
         {/* Video Player */}
         <div className="relative bg-black aspect-video overflow-hidden">
-          {/* HTML5 Video Player with Google Drive source */}
-          {/* Google Drive iframe with controls hidden via scaling */}
-          <div className="relative w-full h-full overflow-hidden">
-            <iframe
-              ref={iframeRef}
-              src={`https://drive.google.com/file/d/${video.googleDriveFileId}/preview?usp=embed_facebook`}
-              className="absolute inset-0"
-              allow="autoplay; fullscreen"
-              allowFullScreen
-              title={video.title}
-              frameBorder="0"
-              style={{
-                width: '150%',
-                height: '250%',
-                left: '-25%',
-                top: '-75%',
-                border: 'none',
-                background: 'black'
-              }}
+          {/* Video thumbnail with play overlay */}
+          <div className="relative w-full h-full bg-slate-900">
+            <img 
+              src={googleDriveService.getThumbnailUrl(video.googleDriveFileId, 800)}
+              alt={video.title}
+              className="w-full h-full object-cover"
             />
             
-            {/* Invisible overlay to capture clicks */}
-            <div 
-              className="absolute inset-0 bg-transparent cursor-pointer z-10"
-              onClick={handlePlayPause}
-              style={{ pointerEvents: 'auto' }}
-            >
-              {/* Custom play button when paused */}
-              {!isPlaying && (
-                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                  <div className="bg-aviation-blue bg-opacity-90 rounded-full p-8 hover:bg-opacity-100 transition-all shadow-xl">
-                    <Play className="w-20 h-20 text-white" />
-                  </div>
+            {/* Play overlay */}
+            <div className="absolute inset-0 bg-black bg-opacity-40 flex flex-col items-center justify-center">
+              <div className="text-center mb-6">
+                <div className="bg-aviation-blue bg-opacity-90 rounded-full p-8 hover:bg-opacity-100 transition-all shadow-xl mb-4 cursor-pointer"
+                     onClick={() => window.open(`https://drive.google.com/file/d/${video.googleDriveFileId}/view`, '_blank')}>
+                  <Play className="w-20 h-20 text-white" />
                 </div>
-              )}
+                <p className="text-white text-lg font-medium">Google Drive에서 비디오 시청</p>
+                <p className="text-slate-300 text-sm">새 창에서 고화질 영상을 재생합니다</p>
+              </div>
+              
+              {/* Manual progress controls */}
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => {
+                    setIsPlaying(true);
+                    // Start manual progress tracking
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium"
+                >
+                  시청 시작
+                </button>
+                <button
+                  onClick={() => {
+                    progressMutation.mutate({
+                      videoId: video.id,
+                      watchedDuration: duration,
+                      completed: true,
+                    });
+                    toast({
+                      title: "완료 처리됨",
+                      description: "강의를 완료로 표시했습니다.",
+                    });
+                  }}
+                  className="bg-aviation-blue hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+                >
+                  시청 완료
+                </button>
+              </div>
             </div>
           </div>
           
