@@ -41,6 +41,30 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
     queryKey: ["/api/notes", video.id],
   });
 
+  // Auto-track progress when playing
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isPlaying) {
+      interval = setInterval(() => {
+        const newTime = currentTime + 1; // Increment by 1 second
+        setCurrentTime(newTime);
+        handleTimeUpdate(newTime);
+        
+        if (newTime >= duration) {
+          setIsPlaying(false);
+          handleVideoEnd();
+        }
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isPlaying, currentTime, duration]);
+
   const progressMutation = useMutation({
     mutationFn: (data: { videoId: number; watchedDuration: number; completed: boolean }) =>
       apiRequest("POST", "/api/progress", data),
@@ -136,40 +160,37 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
       <Card className="bg-slate-800 overflow-hidden shadow-lg">
         {/* Video Player */}
         <div className="relative bg-black aspect-video">
-          {/* HTML5 Video Player */}
-          <video
-            ref={videoRef}
+          {/* Google Drive Embedded Player */}
+          <iframe
+            src={`https://drive.google.com/file/d/${video.googleDriveFileId}/preview`}
             className="w-full h-full"
-            controls
-            onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
-            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            onEnded={handleVideoEnd}
-            onVolumeChange={(e) => {
-              setVolume(e.currentTarget.volume);
-              setIsMuted(e.currentTarget.muted);
-            }}
-            poster={googleDriveService.getThumbnailUrl(video.googleDriveFileId, 800)}
-          >
-            <source src={googleDriveService.getDirectUrl(video.googleDriveFileId)} type="video/mp4" />
-            <p className="text-white p-4">
-              브라우저가 비디오를 지원하지 않습니다. 
-              <a 
-                href={`https://drive.google.com/file/d/${video.googleDriveFileId}/view`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-aviation-blue hover:underline ml-2"
-              >
-                Google Drive에서 시청하기
-              </a>
-            </p>
-          </video>
+            allow="autoplay"
+            allowFullScreen
+            title={video.title}
+
+          />
           
-          {/* Progress Overlay */}
-          <div className="absolute top-4 right-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded text-sm">
-            진도: {watchedSegments.size * 10}초 / {Math.round(duration)}초 
-            ({duration > 0 ? Math.round((watchedSegments.size * 10 / duration) * 100) : 0}%)
+          {/* Progress Control Panel */}
+          <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-80 text-white p-4 rounded">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-4">
+                <Button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="bg-aviation-blue hover:bg-blue-700"
+                  size="sm"
+                >
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  {isPlaying ? " 일시정지" : " 재생"}
+                </Button>
+                <span className="text-sm">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
+              </div>
+              <div className="text-sm">
+                진도: {Math.round((currentTime / duration) * 100)}%
+              </div>
+            </div>
+            <Progress value={(currentTime / duration) * 100} className="h-2" />
           </div>
           
 
