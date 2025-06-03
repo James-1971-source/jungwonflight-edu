@@ -185,40 +185,41 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
         {/* Video Player */}
         <div className="relative bg-black aspect-video overflow-hidden">
           {/* HTML5 Video Player with Google Drive source */}
-          <video
-            ref={videoRef}
-            className="w-full h-full object-cover"
-            poster={googleDriveService.getThumbnailUrl(video.googleDriveFileId, 800)}
-            onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
-            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            onEnded={handleVideoEnd}
-            onError={(e) => {
-              console.error('Video playback error:', e);
-              setIsPlaying(false);
-            }}
-            crossOrigin="anonymous"
-          >
-            <source src={googleDriveService.getDirectUrl(video.googleDriveFileId)} type="video/mp4" />
-            <p className="text-white p-4">
-              브라우저가 비디오를 지원하지 않습니다.
-            </p>
-          </video>
-          
-          {/* Custom video controls overlay */}
-          <div 
-            className="absolute inset-0 cursor-pointer"
-            onClick={handlePlayPause}
-          >
-            {/* Play button overlay when paused */}
-            {!isPlaying && (
-              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                <div className="bg-black bg-opacity-70 rounded-full p-8 hover:bg-opacity-90 transition-all">
-                  <Play className="w-20 h-20 text-white" />
+          {/* Google Drive iframe with controls hidden via scaling */}
+          <div className="relative w-full h-full overflow-hidden">
+            <iframe
+              ref={iframeRef}
+              src={`https://drive.google.com/file/d/${video.googleDriveFileId}/preview?usp=embed_facebook`}
+              className="absolute inset-0"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              title={video.title}
+              frameBorder="0"
+              style={{
+                width: '150%',
+                height: '250%',
+                left: '-25%',
+                top: '-75%',
+                border: 'none',
+                background: 'black'
+              }}
+            />
+            
+            {/* Invisible overlay to capture clicks */}
+            <div 
+              className="absolute inset-0 bg-transparent cursor-pointer z-10"
+              onClick={handlePlayPause}
+              style={{ pointerEvents: 'auto' }}
+            >
+              {/* Custom play button when paused */}
+              {!isPlaying && (
+                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                  <div className="bg-aviation-blue bg-opacity-90 rounded-full p-8 hover:bg-opacity-100 transition-all shadow-xl">
+                    <Play className="w-20 h-20 text-white" />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
           
           {/* Progress Control Panel */}
