@@ -128,12 +128,13 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
               />
               <h3 className="text-xl font-semibold text-white mb-4">{video.title}</h3>
               <p className="text-slate-300 mb-6">Google Drive에서 고화질 동영상을 시청하세요</p>
-              <div className="space-y-3">
+              <div className="space-y-3 relative z-10">
                 <a
                   href={`https://drive.google.com/file/d/${video.googleDriveFileId}/view`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-6 py-3 bg-aviation-blue hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                  className="inline-flex items-center px-6 py-3 bg-aviation-blue hover:bg-blue-700 text-white font-medium rounded-lg transition-colors cursor-pointer relative z-20"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   <Play className="w-5 h-5 mr-2" />
                   Google Drive에서 시청하기
@@ -145,18 +146,7 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
             </div>
           </div>
           
-          {/* Video Controls Overlay */}
-          <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
-            <Button
-              onClick={handlePlayPause}
-              size="lg"
-              className="bg-aviation-blue hover:bg-blue-700 rounded-full p-4 text-white text-2xl"
-            >
-              {isPlaying ? <Pause /> : <Play />}
-            </Button>
-          </div>
-          
-          {/* Video Info Overlay */}
+          {/* Video Info Overlay - Only show at bottom */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
             <div className="flex items-center justify-between text-white">
               <div>
