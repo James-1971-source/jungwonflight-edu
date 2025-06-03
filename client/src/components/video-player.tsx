@@ -145,7 +145,21 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
   };
 
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
+    const newIsPlaying = !isPlaying;
+    setIsPlaying(newIsPlaying);
+    
+    // Try to communicate with iframe
+    if (iframeRef.current) {
+      try {
+        const message = newIsPlaying ? 
+          '{"event":"command","func":"playVideo","args":""}' : 
+          '{"event":"command","func":"pauseVideo","args":""}';
+        
+        iframeRef.current.contentWindow?.postMessage(message, '*');
+      } catch (error) {
+        console.log('iframe postMessage not available');
+      }
+    }
   };
 
   const handleSaveNote = () => {
@@ -170,34 +184,47 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
       <Card className="bg-slate-800 overflow-hidden shadow-lg">
         {/* Video Player */}
         <div className="relative bg-black aspect-video overflow-hidden">
-          {/* Google Drive Embedded Player with hidden controls */}
-          <iframe
-            ref={iframeRef}
-            src={`https://drive.google.com/file/d/${video.googleDriveFileId}/preview?usp=sharing&start=0`}
-            className="w-full h-full"
-            allow="autoplay"
-            allowFullScreen
-            title={video.title}
-            style={{
-              transform: 'scale(1.1)',
-              transformOrigin: 'center center',
-              pointerEvents: 'none'
-            }}
-          />
-          
-          {/* Clickable overlay to capture user interactions */}
-          <div 
-            className="absolute inset-0 bg-transparent cursor-pointer"
-            onClick={handlePlayPause}
-            style={{ pointerEvents: 'auto' }}
-          >
-            {/* Center play button overlay when paused */}
-            {!isPlaying && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-black bg-opacity-50 rounded-full p-6">
-                  <Play className="w-16 h-16 text-white" />
+          {/* Video thumbnail and play overlay */}
+          <div className="relative w-full h-full bg-slate-900">
+            {/* Video thumbnail */}
+            <img 
+              src={googleDriveService.getThumbnailUrl(video.googleDriveFileId, 800)}
+              alt={video.title}
+              className="w-full h-full object-cover"
+            />
+            
+            {/* Play overlay */}
+            <div 
+              className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center cursor-pointer"
+              onClick={handlePlayPause}
+            >
+              {!isPlaying ? (
+                <div className="bg-black bg-opacity-60 rounded-full p-8 hover:bg-opacity-80 transition-all">
+                  <Play className="w-20 h-20 text-white" />
                 </div>
-              </div>
+              ) : (
+                <div className="bg-black bg-opacity-60 rounded-full p-8 hover:bg-opacity-80 transition-all">
+                  <Pause className="w-20 h-20 text-white" />
+                </div>
+              )}
+            </div>
+            
+            {/* Hidden iframe for actual video (only shown when playing) */}
+            {isPlaying && (
+              <iframe
+                ref={iframeRef}
+                src={`https://drive.google.com/file/d/${video.googleDriveFileId}/preview?autoplay=1`}
+                className="absolute inset-0 w-full h-full z-20"
+                allow="autoplay"
+                allowFullScreen
+                title={video.title}
+                style={{
+                  width: '120%',
+                  height: '150%',
+                  left: '-10%',
+                  top: '-25%'
+                }}
+              />
             )}
           </div>
           
