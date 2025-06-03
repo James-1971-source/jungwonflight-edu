@@ -33,7 +33,7 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
   const [note, setNote] = useState("");
   const [watchedSegments, setWatchedSegments] = useState<Set<number>>(new Set());
   const [lastUpdateTime, setLastUpdateTime] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -71,6 +71,13 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/progress"] });
     },
+    onError: () => {
+      toast({
+        title: "오류",
+        description: "진도 저장 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
   });
 
   const noteMutation = useMutation({
@@ -80,8 +87,8 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/notes", video.id] });
       setNote("");
       toast({
-        title: "노트 저장 완료",
-        description: "학습 노트가 성공적으로 저장되었습니다.",
+        title: "노트 저장됨",
+        description: "노트가 성공적으로 저장되었습니다.",
       });
     },
     onError: () => {
@@ -92,10 +99,6 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
       });
     },
   });
-
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
 
   // Track actual watched time by segments
   const handleTimeUpdate = (time: number) => {
@@ -108,18 +111,17 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
       newWatchedSegments.add(currentSegment);
       setWatchedSegments(newWatchedSegments);
     }
-    
-    // Update progress every 15 seconds to avoid too frequent API calls
+
+    // Save progress every 15 seconds to avoid too frequent API calls
     const now = Date.now();
     if (now - lastUpdateTime > 15000) {
-      const actualWatchedTime = watchedSegments.size * 10; // 10 seconds per segment
-      const completionPercentage = duration > 0 ? (actualWatchedTime / duration) : 0;
-      const completed = completionPercentage >= 0.8; // 80% completion required
+      const watchedDuration = watchedSegments.size * 10;
+      const progressPercentage = (watchedDuration / duration) * 100;
       
       progressMutation.mutate({
         videoId: video.id,
-        watchedDuration: actualWatchedTime,
-        completed,
+        watchedDuration,
+        completed: progressPercentage >= 80,
       });
       
       setLastUpdateTime(now);
@@ -128,12 +130,22 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
 
   const handleVideoEnd = () => {
     setIsPlaying(false);
-    progressMutation.mutate({
-      videoId: video.id,
-      watchedDuration: duration,
-      completed: true,
-    });
+    if ((currentTime / duration) >= 0.8) {
+      progressMutation.mutate({
+        videoId: video.id,
+        watchedDuration: duration,
+        completed: true,
+      });
+      toast({
+        title: "강의 완료!",
+        description: "강의를 성공적으로 완료했습니다.",
+      });
+    }
     onVideoEnd?.();
+  };
+
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
   };
 
   const handleSaveNote = () => {
@@ -152,30 +164,49 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
   };
 
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const streamingUrl = googleDriveService.getStreamingUrl(video.googleDriveFileId);
-  const directUrl = googleDriveService.getDirectUrl(video.googleDriveFileId);
 
   return (
     <div className="space-y-8">
       <Card className="bg-slate-800 overflow-hidden shadow-lg">
         {/* Video Player */}
-        <div className="relative bg-black aspect-video">
-          {/* Google Drive Embedded Player */}
+        <div className="relative bg-black aspect-video overflow-hidden">
+          {/* Google Drive Embedded Player with hidden controls */}
           <iframe
-            src={`https://drive.google.com/file/d/${video.googleDriveFileId}/preview`}
+            ref={iframeRef}
+            src={`https://drive.google.com/file/d/${video.googleDriveFileId}/preview?usp=sharing&start=0`}
             className="w-full h-full"
             allow="autoplay"
             allowFullScreen
             title={video.title}
-
+            style={{
+              transform: 'scale(1.1)',
+              transformOrigin: 'center center',
+              pointerEvents: 'none'
+            }}
           />
           
+          {/* Clickable overlay to capture user interactions */}
+          <div 
+            className="absolute inset-0 bg-transparent cursor-pointer"
+            onClick={handlePlayPause}
+            style={{ pointerEvents: 'auto' }}
+          >
+            {/* Center play button overlay when paused */}
+            {!isPlaying && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="bg-black bg-opacity-50 rounded-full p-6">
+                  <Play className="w-16 h-16 text-white" />
+                </div>
+              </div>
+            )}
+          </div>
+          
           {/* Progress Control Panel */}
-          <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-80 text-white p-4 rounded">
+          <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-90 text-white p-4 rounded pointer-events-auto">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-4">
                 <Button
-                  onClick={() => setIsPlaying(!isPlaying)}
+                  onClick={handlePlayPause}
                   className="bg-aviation-blue hover:bg-blue-700"
                   size="sm"
                 >
@@ -192,75 +223,71 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
             </div>
             <Progress value={(currentTime / duration) * 100} className="h-2" />
           </div>
-          
-
         </div>
         
         {/* Video Details */}
         <CardContent className="p-6">
-          <h2 className="text-xl font-semibold text-white mb-3">{video.title}</h2>
-          {video.description && (
-            <p className="text-slate-300 leading-relaxed mb-4">
-              {video.description}
-            </p>
-          )}
-          
-          <div className="flex items-center justify-between text-sm text-slate-400 border-t border-slate-700 pt-4">
-            <div className="flex items-center space-x-4">
-              <span>업로드: {new Date(video.createdAt).toLocaleDateString('ko-KR')}</span>
-              <span>조회수: 1,234회</span>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-white mb-2">{video.title}</h2>
+            <p className="text-slate-300 leading-relaxed">{video.description}</p>
+          </div>
+
+          {/* Video Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-slate-700 rounded-lg">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-aviation-blue">{Math.round(progressPercentage)}%</div>
+              <div className="text-sm text-slate-300">진도율</div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm" className="hover:text-aviation-blue">
-                <Bookmark className="h-4 w-4 mr-1" />
-                북마크
-              </Button>
-              <Button variant="ghost" size="sm" className="hover:text-aviation-blue">
-                <Share2 className="h-4 w-4 mr-1" />
-                공유
-              </Button>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-aviation-orange">{formatTime(duration)}</div>
+              <div className="text-sm text-slate-300">총 시간</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-400">{formatTime(currentTime)}</div>
+              <div className="text-sm text-slate-300">시청 시간</div>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Learning Notes Section */}
-      <Card className="bg-slate-800">
-        <CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">학습 노트</h3>
-          
-          {/* Existing Notes */}
-          {notes.length > 0 && (
-            <div className="mb-4 space-y-2">
-              {notes.map((userNote) => (
-                <div key={userNote.id} className="bg-slate-700 rounded-lg p-3">
-                  <p className="text-slate-200 text-sm">{userNote.content}</p>
-                  <p className="text-slate-400 text-xs mt-1">
-                    {new Date(userNote.createdAt).toLocaleDateString('ko-KR')}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {/* New Note */}
-          <div className="bg-slate-700 rounded-lg p-4">
-            <Textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="w-full bg-transparent text-slate-200 placeholder-slate-400 resize-none focus:outline-none border-none"
-              rows={4}
-              placeholder="이 강의에 대한 메모를 작성하세요..."
-            />
-            <div className="flex justify-end mt-3">
+          {/* Notes Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-white flex items-center">
+              <Bookmark className="w-5 h-5 mr-2 text-aviation-blue" />
+              학습 노트
+            </h3>
+            
+            <div className="space-y-3">
+              <Textarea
+                placeholder="이 강의에 대한 노트를 작성하세요..."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                rows={4}
+              />
               <Button
                 onClick={handleSaveNote}
                 disabled={!note.trim() || noteMutation.isPending}
-                className="bg-aviation-blue hover:bg-blue-700 text-white"
+                className="bg-aviation-blue hover:bg-blue-700"
               >
-                {noteMutation.isPending ? "저장 중..." : "저장"}
+                {noteMutation.isPending ? "저장 중..." : "노트 저장"}
               </Button>
             </div>
+
+            {/* Previous Notes */}
+            {notes.length > 0 && (
+              <div className="mt-6">
+                <h4 className="text-md font-medium text-white mb-3">이전 노트</h4>
+                <div className="space-y-3">
+                  {notes.map((savedNote) => (
+                    <div key={savedNote.id} className="bg-slate-700 p-4 rounded-lg">
+                      <p className="text-slate-200">{savedNote.content}</p>
+                      <p className="text-xs text-slate-400 mt-2">
+                        {new Date(savedNote.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
