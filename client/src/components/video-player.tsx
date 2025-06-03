@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +31,9 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [note, setNote] = useState("");
+  const [watchedSegments, setWatchedSegments] = useState<Set<number>>(new Set());
+  const [lastUpdateTime, setLastUpdateTime] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -70,17 +73,32 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
     setIsPlaying(!isPlaying);
   };
 
+  // Track actual watched time by segments
   const handleTimeUpdate = (time: number) => {
     setCurrentTime(time);
     
-    // Update progress every 10 seconds
-    if (time % 10 === 0) {
-      const completed = time >= duration * 0.9; // Consider completed if watched 90%
+    // Track 10-second segments that have been watched
+    const currentSegment = Math.floor(time / 10);
+    if (!watchedSegments.has(currentSegment)) {
+      const newWatchedSegments = new Set(watchedSegments);
+      newWatchedSegments.add(currentSegment);
+      setWatchedSegments(newWatchedSegments);
+    }
+    
+    // Update progress every 15 seconds to avoid too frequent API calls
+    const now = Date.now();
+    if (now - lastUpdateTime > 15000) {
+      const actualWatchedTime = watchedSegments.size * 10; // 10 seconds per segment
+      const completionPercentage = duration > 0 ? (actualWatchedTime / duration) : 0;
+      const completed = completionPercentage >= 0.8; // 80% completion required
+      
       progressMutation.mutate({
         videoId: video.id,
-        watchedDuration: time,
+        watchedDuration: actualWatchedTime,
         completed,
       });
+      
+      setLastUpdateTime(now);
     }
   };
 
@@ -117,88 +135,44 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
     <div className="space-y-8">
       <Card className="bg-slate-800 overflow-hidden shadow-lg">
         {/* Video Player */}
-        <div className="relative bg-black video-aspect">
-          {/* Google Drive Video Preview */}
-          <div className="w-full h-full flex items-center justify-center bg-slate-800">
-            <div className="text-center p-8">
-              <img 
-                src={googleDriveService.getThumbnailUrl(video.googleDriveFileId, 800)}
-                alt={video.title}
-                className="w-full max-w-md mx-auto rounded-lg mb-6 shadow-lg"
-              />
-              <h3 className="text-xl font-semibold text-white mb-4">{video.title}</h3>
-              <p className="text-slate-300 mb-6">Google Drive에서 고화질 동영상을 시청하세요</p>
-              <div className="space-y-3 relative z-10">
-                <a
-                  href={`https://drive.google.com/file/d/${video.googleDriveFileId}/view`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-6 py-3 bg-aviation-blue hover:bg-blue-700 text-white font-medium rounded-lg transition-colors cursor-pointer relative z-20"
-                  style={{ pointerEvents: 'auto' }}
-                >
-                  <Play className="w-5 h-5 mr-2" />
-                  Google Drive에서 시청하기
-                </a>
-                <Button
-                  onClick={() => {
-                    progressMutation.mutate({
-                      videoId: video.id,
-                      watchedDuration: video.duration || 0,
-                      completed: true,
-                    });
-                  }}
-                  className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors relative z-20"
-                  style={{ pointerEvents: 'auto' }}
-                >
-                  ✓ 시청 완료 표시
-                </Button>
-                <div className="text-sm text-slate-400">
-                  동영상 시청 후 완료 버튼을 클릭하세요
-                </div>
-              </div>
-            </div>
+        <div className="relative bg-black aspect-video">
+          {/* HTML5 Video Player */}
+          <video
+            ref={videoRef}
+            className="w-full h-full"
+            controls
+            onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
+            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onEnded={handleVideoEnd}
+            onVolumeChange={(e) => {
+              setVolume(e.currentTarget.volume);
+              setIsMuted(e.currentTarget.muted);
+            }}
+            poster={googleDriveService.getThumbnailUrl(video.googleDriveFileId, 800)}
+          >
+            <source src={googleDriveService.getDirectUrl(video.googleDriveFileId)} type="video/mp4" />
+            <p className="text-white p-4">
+              브라우저가 비디오를 지원하지 않습니다. 
+              <a 
+                href={`https://drive.google.com/file/d/${video.googleDriveFileId}/view`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-aviation-blue hover:underline ml-2"
+              >
+                Google Drive에서 시청하기
+              </a>
+            </p>
+          </video>
+          
+          {/* Progress Overlay */}
+          <div className="absolute top-4 right-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded text-sm">
+            진도: {watchedSegments.size * 10}초 / {Math.round(duration)}초 
+            ({duration > 0 ? Math.round((watchedSegments.size * 10 / duration) * 100) : 0}%)
           </div>
           
-          {/* Video Info Overlay - Only show at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
-            <div className="flex items-center justify-between text-white">
-              <div>
-                <h3 className="font-medium">{video.title}</h3>
-                <p className="text-sm text-slate-300">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </p>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsMuted(!isMuted)}
-                  className="hover:text-aviation-blue"
-                >
-                  {isMuted ? <VolumeX /> : <Volume2 />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:text-aviation-blue"
-                >
-                  <Maximize />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:text-aviation-blue"
-                >
-                  <Settings />
-                </Button>
-              </div>
-            </div>
-            
-            {/* Progress Bar */}
-            <div className="mt-3">
-              <Progress value={progressPercentage} className="h-1" />
-            </div>
-          </div>
+
         </div>
         
         {/* Video Details */}
