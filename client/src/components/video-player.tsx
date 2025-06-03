@@ -34,6 +34,7 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
   const [watchedSegments, setWatchedSegments] = useState<Set<number>>(new Set());
   const [lastUpdateTime, setLastUpdateTime] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -145,19 +146,18 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
   };
 
   const handlePlayPause = () => {
-    const newIsPlaying = !isPlaying;
-    setIsPlaying(newIsPlaying);
-    
-    // Try to communicate with iframe
-    if (iframeRef.current) {
-      try {
-        const message = newIsPlaying ? 
-          '{"event":"command","func":"playVideo","args":""}' : 
-          '{"event":"command","func":"pauseVideo","args":""}';
-        
-        iframeRef.current.contentWindow?.postMessage(message, '*');
-      } catch (error) {
-        console.log('iframe postMessage not available');
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play().catch((error) => {
+          console.error('Video play failed:', error);
+          toast({
+            title: "재생 오류",
+            description: "비디오를 재생할 수 없습니다. Google Drive 링크를 확인해주세요.",
+            variant: "destructive",
+          });
+        });
       }
     }
   };
@@ -184,47 +184,40 @@ export function VideoPlayer({ video, onVideoEnd }: VideoPlayerProps) {
       <Card className="bg-slate-800 overflow-hidden shadow-lg">
         {/* Video Player */}
         <div className="relative bg-black aspect-video overflow-hidden">
-          {/* Video thumbnail and play overlay */}
-          <div className="relative w-full h-full bg-slate-900">
-            {/* Video thumbnail */}
-            <img 
-              src={googleDriveService.getThumbnailUrl(video.googleDriveFileId, 800)}
-              alt={video.title}
-              className="w-full h-full object-cover"
-            />
-            
-            {/* Play overlay */}
-            <div 
-              className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center cursor-pointer"
-              onClick={handlePlayPause}
-            >
-              {!isPlaying ? (
-                <div className="bg-black bg-opacity-60 rounded-full p-8 hover:bg-opacity-80 transition-all">
+          {/* HTML5 Video Player with Google Drive source */}
+          <video
+            ref={videoRef}
+            className="w-full h-full object-cover"
+            poster={googleDriveService.getThumbnailUrl(video.googleDriveFileId, 800)}
+            onTimeUpdate={(e) => handleTimeUpdate(e.currentTarget.currentTime)}
+            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onEnded={handleVideoEnd}
+            onError={(e) => {
+              console.error('Video playback error:', e);
+              setIsPlaying(false);
+            }}
+            crossOrigin="anonymous"
+          >
+            <source src={googleDriveService.getDirectUrl(video.googleDriveFileId)} type="video/mp4" />
+            <p className="text-white p-4">
+              브라우저가 비디오를 지원하지 않습니다.
+            </p>
+          </video>
+          
+          {/* Custom video controls overlay */}
+          <div 
+            className="absolute inset-0 cursor-pointer"
+            onClick={handlePlayPause}
+          >
+            {/* Play button overlay when paused */}
+            {!isPlaying && (
+              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                <div className="bg-black bg-opacity-70 rounded-full p-8 hover:bg-opacity-90 transition-all">
                   <Play className="w-20 h-20 text-white" />
                 </div>
-              ) : (
-                <div className="bg-black bg-opacity-60 rounded-full p-8 hover:bg-opacity-80 transition-all">
-                  <Pause className="w-20 h-20 text-white" />
-                </div>
-              )}
-            </div>
-            
-            {/* Hidden iframe for actual video (only shown when playing) */}
-            {isPlaying && (
-              <iframe
-                ref={iframeRef}
-                src={`https://drive.google.com/file/d/${video.googleDriveFileId}/preview?autoplay=1`}
-                className="absolute inset-0 w-full h-full z-20"
-                allow="autoplay"
-                allowFullScreen
-                title={video.title}
-                style={{
-                  width: '120%',
-                  height: '150%',
-                  left: '-10%',
-                  top: '-25%'
-                }}
-              />
+              </div>
             )}
           </div>
           
