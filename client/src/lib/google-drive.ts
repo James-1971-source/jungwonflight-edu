@@ -12,7 +12,7 @@ export class GoogleDriveService {
   private apiKey: string;
 
   constructor() {
-    this.apiKey = import.meta.env.VITE_GOOGLE_DRIVE_API_KEY || "";
+    this.apiKey = (import.meta as any).env?.VITE_GOOGLE_DRIVE_API_KEY || "";
   }
 
   public static getInstance(): GoogleDriveService {
@@ -49,8 +49,8 @@ export class GoogleDriveService {
   }
 
   getStreamingUrl(fileId: string): string {
-    // Google Drive embed URL that works better with CSP
-    return `https://drive.google.com/file/d/${fileId}/preview?usp=embed_facebook`;
+    // Use direct streaming URL that works with video tag
+    return `https://drive.google.com/uc?export=view&id=${fileId}`;
   }
 
   getDirectUrl(fileId: string): string {
@@ -62,6 +62,22 @@ export class GoogleDriveService {
 
   getThumbnailUrl(fileId: string, size: number = 400): string {
     return `https://drive.google.com/thumbnail?id=${fileId}&sz=s${size}`;
+  }
+
+  // Get a fallback player URL for when iframe doesn't work
+  getPlayerUrl(fileId: string): string {
+    return `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+  }
+
+  // Alternative embed URL with autoplay disabled
+  getEmbedUrl(fileId: string, autoplay: boolean = false): string {
+    // Use the most reliable embed format for iframe
+    return `https://drive.google.com/file/d/${fileId}/preview?usp=sharing&controls=1`;
+  }
+  
+  // Get a more reliable embed URL using the uc endpoint
+  getUcEmbedUrl(fileId: string): string {
+    return `https://docs.google.com/uc?export=download&id=${fileId}`;
   }
 }
 

@@ -70,6 +70,11 @@ export function Navigation({ user }: NavigationProps) {
                 대시보드
               </Button>
             </Link>
+            <Link href="/my-notes">
+              <Button variant={location === "/my-notes" ? "default" : "ghost"} className="text-slate-300 hover:text-white">
+                내 노트
+              </Button>
+            </Link>
             <Link href="/dashboard">
               <Button variant="ghost" className="text-slate-300 hover:text-white">
                 내 강의

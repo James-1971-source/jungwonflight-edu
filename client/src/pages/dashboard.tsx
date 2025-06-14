@@ -4,6 +4,7 @@ import { useParams } from "wouter";
 import { Navigation } from "@/components/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { VideoPlayer } from "@/components/video-player";
+import { NativeVideoPlayer } from "@/components/native-video-player";
 import { VideoList } from "@/components/video-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -137,10 +138,18 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
                 {selectedVideo && (
-                  <VideoPlayer 
-                    video={selectedVideo} 
-                    onVideoEnd={handleVideoEnd}
-                  />
+                  // 로컬 파일 업로드된 비디오는 NativeVideoPlayer 사용, 기존 Google Drive는 VideoPlayer 사용
+                  selectedVideo.googleDriveFileId?.startsWith('local:') ? (
+                    <NativeVideoPlayer 
+                      video={selectedVideo} 
+                      onVideoEnd={handleVideoEnd}
+                    />
+                  ) : (
+                    <VideoPlayer 
+                      video={selectedVideo} 
+                      onVideoEnd={handleVideoEnd}
+                    />
+                  )
                 )}
               </div>
 

@@ -1,57 +1,57 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, blob, real } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
-  role: text("role").notNull().default("student"), // "student" | "admin"
-  isApproved: boolean("is_approved").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  role: text("role").notNull().default("student"),
+  isApproved: integer("is_approved", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
-export const categories = pgTable("categories", {
-  id: serial("id").primaryKey(),
+export const categories = sqliteTable("categories", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   description: text("description"),
   icon: text("icon").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
-export const videos = pgTable("videos", {
-  id: serial("id").primaryKey(),
+export const videos = sqliteTable("videos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   title: text("title").notNull(),
   description: text("description"),
-  googleDriveFileId: text("google_drive_file_id").notNull(),
+  googleDriveFileId: text("google_drive_file_id"), // nullable로 변경
   thumbnailUrl: text("thumbnail_url"),
-  duration: integer("duration"), // in seconds
+  duration: integer("duration"),
   categoryId: integer("category_id").references(() => categories.id),
   uploadedBy: integer("uploaded_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
-export const userProgress = pgTable("user_progress", {
-  id: serial("id").primaryKey(),
+export const userProgress = sqliteTable("user_progress", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").references(() => users.id).notNull(),
   videoId: integer("video_id").references(() => videos.id).notNull(),
-  watchedDuration: integer("watched_duration").default(0), // in seconds
-  completed: boolean("completed").default(false),
-  lastWatchedAt: timestamp("last_watched_at").defaultNow(),
+  watchedDuration: integer("watched_duration").default(0),
+  completed: integer("completed", { mode: "boolean" }).default(false),
+  lastWatchedAt: integer("last_watched_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
-export const userNotes = pgTable("user_notes", {
-  id: serial("id").primaryKey(),
+export const userNotes = sqliteTable("user_notes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").references(() => users.id).notNull(),
   videoId: integer("video_id").references(() => videos.id).notNull(),
   content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
-// Relations
+// Relations (동일하게 유지)
 export const usersRelations = relations(users, ({ many }) => ({
   uploadedVideos: many(videos),
   progress: many(userProgress),
@@ -120,6 +120,7 @@ export const insertUserProgressSchema = createInsertSchema(userProgress).omit({
 
 export const insertUserNoteSchema = createInsertSchema(userNotes).omit({
   id: true,
+  userId: true,
   createdAt: true,
   updatedAt: true,
 });

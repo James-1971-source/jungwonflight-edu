@@ -11,6 +11,7 @@ import VideoPlayerPage from "@/pages/video-player";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 import { Skeleton } from "@/components/ui/skeleton";
+import MyNotesPage from "@/pages/my-notes";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useQuery({
@@ -79,6 +80,11 @@ function Router() {
       <Route path="/dashboard">
         <ProtectedRoute>
           <Dashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/my-notes">
+        <ProtectedRoute>
+          <MyNotesPage />
         </ProtectedRoute>
       </Route>
       <Route path="/">

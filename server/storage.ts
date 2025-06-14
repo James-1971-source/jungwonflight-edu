@@ -14,17 +14,21 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByRole(role: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined>;
 
   // Categories
   getCategories(): Promise<Category[]>;
+  getCategoryByName(name: string): Promise<Category | undefined>;
   createCategory(category: InsertCategory): Promise<Category>;
 
   // Videos
   getVideos(): Promise<Video[]>;
   getVideosByCategory(categoryId: number): Promise<Video[]>;
   getVideo(id: number): Promise<Video | undefined>;
+  getVideoByTitle(title: string): Promise<Video | undefined>;
   createVideo(video: InsertVideo): Promise<Video>;
   updateVideo(id: number, updates: Partial<InsertVideo>): Promise<Video | undefined>;
   deleteVideo(id: number): Promise<boolean>;
@@ -36,6 +40,7 @@ export interface IStorage {
 
   // User Notes
   getUserNotes(userId: number, videoId: number): Promise<UserNote[]>;
+  getAllUserNotes(userId: number): Promise<UserNote[]>;
   createNote(note: InsertUserNote): Promise<UserNote>;
   updateNote(id: number, content: string): Promise<UserNote | undefined>;
   deleteNote(id: number): Promise<boolean>;
@@ -58,6 +63,15 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserByRole(role: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.role, role));
+    return user || undefined;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -78,6 +92,11 @@ export class DatabaseStorage implements IStorage {
   // Categories
   async getCategories(): Promise<Category[]> {
     return await db.select().from(categories).orderBy(categories.name);
+  }
+
+  async getCategoryByName(name: string): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.name, name));
+    return category || undefined;
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
@@ -106,6 +125,11 @@ export class DatabaseStorage implements IStorage {
     return video || undefined;
   }
 
+  async getVideoByTitle(title: string): Promise<Video | undefined> {
+    const [video] = await db.select().from(videos).where(eq(videos.title, title));
+    return video || undefined;
+  }
+
   async createVideo(video: InsertVideo): Promise<Video> {
     const [newVideo] = await db
       .insert(videos)
@@ -124,8 +148,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteVideo(id: number): Promise<boolean> {
-    const result = await db.delete(videos).where(eq(videos.id, id));
-    return result.rowCount > 0;
+    try {
+      // 관련된 사용자 진도 데이터 먼저 삭제 (Foreign Key 제약조건)
+      await db.delete(userProgress).where(eq(userProgress.videoId, id));
+      console.log(`비디오 ${id}의 진도 데이터 삭제 완료`);
+      
+      // 관련된 사용자 노트 데이터 먼저 삭제 (Foreign Key 제약조건)
+      await db.delete(userNotes).where(eq(userNotes.videoId, id));
+      console.log(`비디오 ${id}의 노트 데이터 삭제 완료`);
+      
+      // 마지막으로 비디오 삭제
+      const result = await db.delete(videos).where(eq(videos.id, id));
+      console.log(`비디오 ${id} 삭제 완료, 영향받은 행: ${result.changes}`);
+      
+      return result.changes > 0;
+    } catch (error) {
+      console.error('동영상 삭제 중 데이터베이스 오류:', error);
+      throw error;
+    }
   }
 
   // User Progress
@@ -172,6 +212,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(userNotes.createdAt));
   }
 
+  async getAllUserNotes(userId: number): Promise<UserNote[]> {
+    return await db
+      .select()
+      .from(userNotes)
+      .where(eq(userNotes.userId, userId))
+      .orderBy(desc(userNotes.createdAt));
+  }
+
   async createNote(note: InsertUserNote): Promise<UserNote> {
     const [newNote] = await db
       .insert(userNotes)
@@ -191,16 +239,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteNote(id: number): Promise<boolean> {
     const result = await db.delete(userNotes).where(eq(userNotes.id, id));
-    return result.rowCount > 0;
-  }
-
-  async getUsers(): Promise<User[]> {
-    return await db.select().from(users).orderBy(desc(users.createdAt));
-  }
-
-  async getUserByRole(role: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.role, role));
-    return user || undefined;
+    return result.changes > 0;
   }
 }
 

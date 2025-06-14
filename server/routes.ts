@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertVideoSchema, insertCategorySchema, insertUserNoteSchema } from "@shared/schema";
@@ -6,6 +7,12 @@ import bcrypt from "bcrypt";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
+import multer from "multer";
+import path from "path";
+import { VideoService } from "./videoService";
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 declare global {
   namespace Express {
@@ -20,6 +27,25 @@ declare global {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // 정적 파일 서빙 (업로드된 파일들)
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+  // Multer 설정 (메모리 저장)
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 500 * 1024 * 1024, // 500MB 제한
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('지원하지 않는 파일 형식입니다. MP4, AVI, MOV, WMV, FLV, WebM 파일만 업로드 가능합니다.'));
+      }
+    },
+  });
+
   // Session configuration
   app.use(session({
     secret: process.env.SESSION_SECRET || "avilearn-secret-key",
@@ -224,6 +250,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 새로운 파일 업로드 라우트
+  app.post("/api/videos/upload", requireAdmin, upload.single('video'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "비디오 파일이 필요합니다." });
+      }
+
+      const { title, description, categoryId } = req.body;
+      
+      if (!title) {
+        return res.status(400).json({ message: "제목이 필요합니다." });
+      }
+
+      // 비디오 파일 처리
+      const processedVideo = await VideoService.processVideo(req.file);
+
+      // 데이터베이스에 저장 (파일 경로를 googleDriveFileId에 저장)
+      const video = await storage.createVideo({
+        title,
+        description: description || "",
+        googleDriveFileId: `local:${processedVideo.filename}`, // 로컬 파일 식별자
+        thumbnailUrl: processedVideo.thumbnailPath,
+        duration: processedVideo.duration,
+        categoryId: categoryId ? parseInt(categoryId) : undefined,
+        uploadedBy: req.user!.id
+      });
+      
+      res.status(201).json(video);
+    } catch (error: any) {
+      console.error('비디오 업로드 오류:', error);
+      res.status(400).json({ 
+        message: error.message || "비디오 업로드 중 오류가 발생했습니다." 
+      });
+    }
+  });
+
+  // 기존 JSON 기반 비디오 생성 (호환성을 위해 유지, 하지만 사용 중단 예정)
   app.post("/api/videos", requireAdmin, async (req, res) => {
     try {
       const videoData = insertVideoSchema.parse(req.body);
@@ -256,6 +319,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/videos/:id", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // 삭제하기 전에 비디오 정보 가져오기 (로컬 파일 삭제를 위해)
+      const video = await storage.getVideo(parseInt(id));
+      if (!video) {
+        return res.status(404).json({ message: "동영상을 찾을 수 없습니다." });
+      }
+
+      // 로컬 파일인 경우 파일 시스템에서도 삭제
+      if (video.googleDriveFileId?.startsWith('local:')) {
+        const filename = video.googleDriveFileId.replace('local:', '');
+        const videoPath = `/uploads/videos/${filename}`;
+        const thumbnailPath = video.thumbnailUrl || undefined;
+        
+        try {
+          await VideoService.deleteVideo(videoPath, thumbnailPath);
+          console.log(`로컬 파일 삭제 완료: ${filename}`);
+        } catch (fileError) {
+          console.error('파일 삭제 실패:', fileError);
+          // 파일 삭제 실패해도 DB에서는 삭제 진행
+        }
+      }
+
+      // 데이터베이스에서 삭제
       const success = await storage.deleteVideo(parseInt(id));
       
       if (!success) {
@@ -264,6 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ message: "동영상이 삭제되었습니다." });
     } catch (error) {
+      console.error('동영상 삭제 오류:', error);
       res.status(500).json({ message: "동영상 삭제 중 오류가 발생했습니다." });
     }
   });
@@ -312,6 +399,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.status(201).json(note);
     } catch (error) {
+      const errMsg = (error as Error)?.message || String(error);
+      console.error("노트 생성 에러:", errMsg, req.body);
       res.status(400).json({ message: "노트 생성 중 오류가 발생했습니다." });
     }
   });
@@ -344,6 +433,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "노트가 삭제되었습니다." });
     } catch (error) {
       res.status(500).json({ message: "노트 삭제 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 내가 쓴 모든 노트 반환
+  app.get("/api/my-notes", requireAuth, async (req, res) => {
+    try {
+      const notes = await storage.getAllUserNotes(req.user!.id);
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ message: "내 노트 목록을 불러오는 중 오류가 발생했습니다." });
     }
   });
 
