@@ -197,6 +197,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User update (admin only)
+  app.put("/api/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      // Check if user exists
+      const existingUser = await storage.getUser(parseInt(id));
+      if (!existingUser) {
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      }
+
+      // Check username uniqueness if username is being updated
+      if (updates.username && updates.username !== existingUser.username) {
+        const userWithUsername = await storage.getUserByUsername(updates.username);
+        if (userWithUsername) {
+          return res.status(400).json({ message: "이미 존재하는 사용자명입니다." });
+        }
+      }
+
+      // Check email uniqueness if email is being updated
+      if (updates.email && updates.email !== existingUser.email) {
+        const userWithEmail = await storage.getUserByEmail(updates.email);
+        if (userWithEmail) {
+          return res.status(400).json({ message: "이미 존재하는 이메일입니다." });
+        }
+      }
+
+      // Update user
+      const updatedUser = await storage.updateUser(parseInt(id), updates);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      }
+
+      // Remove password from response
+      const { password, ...userResponse } = updatedUser;
+      res.json(userResponse);
+    } catch (error) {
+      res.status(400).json({ message: "사용자 정보 수정 중 오류가 발생했습니다." });
+    }
+  });
+
+  // User deletion (admin only)
+  app.delete("/api/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = parseInt(id);
+
+      // Check if user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      }
+
+      // Prevent deleting an admin
+      if (user.role === 'admin') {
+        return res.status(400).json({ message: "관리자는 삭제할 수 없습니다." });
+      }
+
+      // Delete user's progress and notes first
+      await storage.deleteUserProgress(userId);
+      await storage.deleteUserNotes(userId);
+
+      // Delete user
+      const success = await storage.deleteUser(userId);
+      if (!success) {
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      }
+
+      res.json({ message: "사용자가 삭제되었습니다." });
+    } catch (error) {
+      console.error('사용자 삭제 오류:', error);
+      res.status(500).json({ message: "사용자 삭제 중 오류가 발생했습니다." });
+    }
+  });
+
   // Categories routes
   app.get("/api/categories", requireAuth, async (req, res) => {
     try {
@@ -229,7 +305,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         videos = await storage.getVideos();
       }
       
-      res.json(videos);
+      const userCourseIds = await storage.getUserCourseIds(req.user!.id);
+      
+      res.json({
+        videos,
+        userCourseIds
+      });
     } catch (error) {
       res.status(500).json({ message: "동영상을 불러오는 중 오류가 발생했습니다." });
     }
@@ -541,6 +622,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Google Drive 파일을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // My Courses routes
+  app.get("/api/my-courses", requireAuth, async (req, res) => {
+    try {
+      const courses = await storage.getUserCourses(req.user!.id);
+      res.json(courses);
+    } catch (error) {
+      res.status(500).json({ message: "내 강의 목록을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.post("/api/my-courses", requireAuth, async (req, res) => {
+    try {
+      const { videoId } = req.body;
+      if (!videoId) {
+        return res.status(400).json({ message: "videoId가 필요합니다." });
+      }
+      await storage.addUserCourse(req.user!.id, videoId);
+      res.status(201).json({ message: "강의가 추가되었습니다." });
+    } catch (error) {
+      res.status(400).json({ message: "강의 추가 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.delete("/api/my-courses/:videoId", requireAuth, async (req, res) => {
+    try {
+      const { videoId } = req.params;
+      await storage.removeUserCourse(req.user!.id, parseInt(videoId));
+      res.json({ message: "강의가 삭제되었습니다." });
+    } catch (error) {
+      res.status(500).json({ message: "강의 삭제 중 오류가 발생했습니다." });
     }
   });
 

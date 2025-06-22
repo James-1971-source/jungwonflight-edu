@@ -12,6 +12,8 @@ import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 import { Skeleton } from "@/components/ui/skeleton";
 import MyNotesPage from "@/pages/my-notes";
+import MyProgressPage from "@/pages/my-progress";
+import MyCoursesPage from "@/pages/my-courses";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useQuery({
@@ -85,6 +87,16 @@ function Router() {
       <Route path="/my-notes">
         <ProtectedRoute>
           <MyNotesPage />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/my-courses">
+        <ProtectedRoute>
+          <MyCoursesPage />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/my-progress">
+        <ProtectedRoute>
+          <MyProgressPage />
         </ProtectedRoute>
       </Route>
       <Route path="/">

@@ -83,7 +83,7 @@ export function VideoList({ videos, currentVideoId, onVideoSelect }: VideoListPr
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className={`font-medium text-sm mb-1 ${
+                    <h4 className={`font-medium text-sm mb-1 leading-tight break-words line-clamp-2 ${
                       isActive ? "text-white" : "text-white"
                     }`}>
                       {video.title}

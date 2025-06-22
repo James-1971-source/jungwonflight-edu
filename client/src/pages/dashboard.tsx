@@ -1,23 +1,26 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams, Link } from "wouter";
 import { Navigation } from "@/components/navigation";
 import { Sidebar } from "@/components/sidebar";
-import { VideoPlayer } from "@/components/video-player";
-import { NativeVideoPlayer } from "@/components/native-video-player";
-import { VideoList } from "@/components/video-list";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, PlusCircle, CheckCircle, PlayCircle } from "lucide-react";
 import type { Video, Category } from "@shared/schema";
 import { getCurrentUser } from "@/lib/auth";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+interface VideosApiResponse {
+  videos: Video[];
+  userCourseIds: number[];
+}
 
 export default function Dashboard() {
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const { id: categoryId } = useParams();
-  
-  // 디버깅용 로그
-  console.log('Dashboard categoryId:', categoryId);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["/api/me"],
@@ -29,57 +32,51 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
-  const { data: videos = [], isLoading: videosLoading, error: videosError } = useQuery<Video[]>({
-    queryKey: categoryId ? ["/api/videos", "category", categoryId] : ["/api/videos"],
+  const queryKey = categoryId ? ["/api/videos", "category", categoryId] : ["/api/videos"];
+  const { data, isLoading: videosLoading, error: videosError } = useQuery<VideosApiResponse>({
+    queryKey: queryKey,
     queryFn: () => {
       const url = categoryId ? `/api/videos?categoryId=${categoryId}` : '/api/videos';
-      console.log('Fetching videos from:', url);
-      return fetch(url).then(res => res.json());
+      return apiRequest("GET", url).then(res => res.json());
     },
     enabled: !!user,
   });
 
+  const videos = data?.videos || [];
+  const userCourseIds = new Set(data?.userCourseIds || []);
+
+  const addCourseMutation = useMutation({
+    mutationFn: (videoId: number) => apiRequest("POST", "/api/my-courses", { videoId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKey });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-courses"] });
+      toast({
+        title: "✅ 추가 완료",
+        description: "선택한 강의가 '내 강의'에 추가되었습니다.",
+      });
+    },
+  });
+
+  const removeCourseMutation = useMutation({
+    mutationFn: (videoId: number) => apiRequest("DELETE", `/api/my-courses/${videoId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKey });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-courses"] });
+      toast({
+        title: "🗑️ 삭제 완료",
+        description: "선택한 강의가 '내 강의'에서 삭제되었습니다.",
+      });
+    },
+  });
+
   const currentCategory = categoryId ? categories.find(c => c.id === parseInt(categoryId)) : null;
 
-  const handleVideoSelect = (video: Video) => {
-    setSelectedVideo(video);
-  };
-
-  const handleVideoEnd = () => {
-    // Auto-play next video logic could go here
-    const currentIndex = videos.findIndex(v => v.id === selectedVideo?.id);
-    if (currentIndex < videos.length - 1) {
-      setSelectedVideo(videos[currentIndex + 1]);
-    }
-  };
-
-  // Set first video as default if none selected
-  if (!selectedVideo && videos.length > 0) {
-    setSelectedVideo(videos[0]);
-  }
-
   if (userLoading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-48" />
-          <Skeleton className="h-4 w-32" />
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen bg-slate-900" />;
   }
-
+  
   if (!user) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <Alert className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    return null; // Should be redirected by ProtectedRoute
   }
 
   return (
@@ -90,7 +87,6 @@ export default function Dashboard() {
         <Sidebar />
         
         <main className="flex-1 p-6">
-          {/* Header Section */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">
               {currentCategory ? currentCategory.name : "전체 강의"}
@@ -109,59 +105,71 @@ export default function Dashboard() {
             </Alert>
           )}
 
-          {videosLoading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <Skeleton className="aspect-video w-full rounded-xl" />
-                <div className="mt-4 space-y-2">
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {videosLoading ? (
+              [...Array(8)].map((_, i) => (
+                <div key={i} className="bg-slate-800 rounded-lg overflow-hidden">
+                  <Skeleton className="w-full h-40" />
+                  <div className="p-4 space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-10 w-full mt-2" />
+                  </div>
                 </div>
+              ))
+            ) : videos.length === 0 ? (
+              <div className="col-span-full">
+                <Alert className="border-slate-700 bg-slate-800">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    아직 등록된 동영상이 없습니다.
+                  </AlertDescription>
+                </Alert>
               </div>
-              <div className="lg:col-span-1">
-                <div className="space-y-3">
-                  {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-20 w-full rounded-lg" />
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : videos.length === 0 ? (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                아직 등록된 동영상이 없습니다. 관리자가 콘텐츠를 업로드할 때까지 기다려주세요.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                {selectedVideo && (
-                  // 로컬 파일 업로드된 비디오는 NativeVideoPlayer 사용, 기존 Google Drive는 VideoPlayer 사용
-                  selectedVideo.googleDriveFileId?.startsWith('local:') ? (
-                    <NativeVideoPlayer 
-                      video={selectedVideo} 
-                      onVideoEnd={handleVideoEnd}
-                    />
-                  ) : (
-                    <VideoPlayer 
-                      video={selectedVideo} 
-                      onVideoEnd={handleVideoEnd}
-                    />
-                  )
-                )}
-              </div>
-
-              <div className="lg:col-span-1">
-                <VideoList
-                  videos={videos}
-                  currentVideoId={selectedVideo?.id}
-                  onVideoSelect={handleVideoSelect}
-                />
-              </div>
-            </div>
-          )}
+            ) : (
+              videos.map(video => {
+                const isAdded = userCourseIds.has(video.id);
+                return (
+                  <div key={video.id} className="bg-slate-800 rounded-lg overflow-hidden group flex flex-col">
+                    <Link href={`/video/${video.id}`}>
+                      <a className="block relative">
+                        <img 
+                          src={video.thumbnailUrl || '/default-thumbnail.jpg'} 
+                          alt={video.title ?? ""}
+                          className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-105" 
+                        />
+                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-all flex items-center justify-center">
+                          <PlayCircle className="w-12 h-12 text-white/70 group-hover:text-white transition-opacity opacity-0 group-hover:opacity-100" />
+                        </div>
+                      </a>
+                    </Link>
+                    <div className="p-4 flex flex-col flex-grow">
+                      <h3 className="font-semibold text-white text-sm leading-tight break-words line-clamp-2 min-h-[2.5rem]">{video.title}</h3>
+                      <p className="text-sm text-slate-400 truncate mt-1 flex-grow">{video.description}</p>
+                      <Button
+                        onClick={() => isAdded ? removeCourseMutation.mutate(video.id) : addCourseMutation.mutate(video.id)}
+                        disabled={addCourseMutation.isPending || removeCourseMutation.isPending}
+                        variant={isAdded ? "destructive" : "default"}
+                        className="w-full mt-4"
+                      >
+                        {isAdded ? (
+                          <>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            내 강의에서 제거
+                          </>
+                        ) : (
+                          <>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            내 강의에 추가
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
         </main>
       </div>
     </div>

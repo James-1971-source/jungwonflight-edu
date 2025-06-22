@@ -1,109 +1,103 @@
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 
-async function seedDatabase() {
+async function seed() {
   console.log("🌱 데이터베이스 시드 작업을 시작합니다...");
 
+  // 관리자 계정 생성
   try {
-    // Create admin user if not exists
-    const existingAdmin = await storage.getUserByRole("admin");
-    if (!existingAdmin) {
+    const adminUser = await storage.getUserByUsername("admin");
+    if (!adminUser) {
       const hashedPassword = await bcrypt.hash("admin123!", 10);
       await storage.createUser({
         username: "admin",
         email: "admin@jungwonflight.edu",
         password: hashedPassword,
         role: "admin",
-        isApproved: true
+        isApproved: true,
       });
       console.log("✅ 관리자 계정 생성 완료 (username: admin, password: admin123!)");
     }
-
-    // Create sample student user
-    const existingStudent = await storage.getUserByUsername("student1");
-    if (!existingStudent) {
-      const hashedPassword = await bcrypt.hash("student123!", 10);
-      await storage.createUser({
-        username: "student1",
-        email: "student1@jungwonflight.edu",
-        password: hashedPassword,
-        role: "student",
-        isApproved: true
-      });
-      console.log("✅ 테스트 학생 계정 생성 완료 (username: student1, password: student123!)");
-    }
-
-    // Create categories
-    const categories = [
-      {
-        name: "기초 비행 이론",
-        description: "비행의 기본 원리와 항공역학의 기초를 배웁니다",
-        icon: "plane"
-      },
-      {
-        name: "항공기 시스템",
-        description: "항공기의 각종 시스템과 구조에 대해 학습합니다",
-        icon: "settings"
-      },
-      {
-        name: "기상학",
-        description: "항공 기상과 날씨 현상에 대한 이해를 높입니다",
-        icon: "cloud"
-      },
-      {
-        name: "항법",
-        description: "항공 항법의 원리와 실무를 배웁니다",
-        icon: "map"
-      },
-      {
-        name: "비상 절차",
-        description: "비상 상황 시 대처 방법과 절차를 학습합니다",
-        icon: "alert-triangle"
-      }
-    ];
-
-    const createdCategories = [];
-    for (const categoryData of categories) {
-      const existingCategory = await storage.getCategoryByName(categoryData.name);
-      if (!existingCategory) {
-        const category = await storage.createCategory(categoryData);
-        createdCategories.push(category);
-        console.log(`✅ 카테고리 생성: ${categoryData.name}`);
-      } else {
-        createdCategories.push(existingCategory);
-      }
-    }
-
-    // 샘플 영상은 생성하지 않음 - 관리자가 직접 업로드해야 함
-    const sampleVideos: any[] = [
-      // 사용자가 직접 업로드한 영상만 유지
-      // 더 이상 자동으로 샘플 영상을 생성하지 않음
-    ];
-
-    const admin = await storage.getUserByRole("admin");
-    for (const videoData of sampleVideos) {
-      const existingVideo = await storage.getVideoByTitle(videoData.title);
-      if (!existingVideo) {
-        await storage.createVideo({
-          ...videoData,
-          uploadedBy: admin!.id
-        });
-        console.log(`✅ 동영상 생성: ${videoData.title}`);
-      }
-    }
-
-    console.log("🎉 데이터베이스 시드 작업이 완료되었습니다!");
-    console.log("\n📋 계정 정보:");
-    console.log("관리자 계정 - username: admin, password: admin123!");
-    console.log("학생 계정 - username: student1, password: student123!");
-    console.log("\n📝 참고: 관리자 계정으로 로그인하여 /admin 페이지에서 영상을 업로드하세요.");
-
   } catch (error) {
-    console.error("❌ 시드 작업 중 오류 발생:", error);
+    console.error("❗️ 관리자 계정 생성 중 오류 발생:", error);
   }
+
+  // 학생 계정 생성
+  try {
+    const studentUser = await storage.getUserByUsername("student1");
+    if (!studentUser) {
+        const hashedPassword = await bcrypt.hash("student123!", 10);
+        await storage.createUser({
+            username: "student1",
+            email: "student1@example.com",
+            password: hashedPassword,
+            role: "student",
+            isApproved: true
+        });
+        console.log("✅ 학생 계정 생성 완료 (username: student1, password: student123!)");
+    }
+  } catch(error) {
+      console.error("❗️ 학생 계정 생성 중 오류 발생:", error);
+  }
+
+  // --- 데이터 초기화 시작 ---
+  // 연결된 데이터부터 순서대로 삭제해야 외래 키 제약 조건 오류가 발생하지 않습니다.
+  console.log("🧹 데이터베이스 초기화를 시작합니다...");
+  try {
+    await storage.deleteAllUserCourses();
+    console.log("  - 수강 중인 강의 정보 삭제 완료");
+    await storage.deleteAllUserProgress();
+    console.log("  - 학습 진도 정보 삭제 완료");
+    await storage.deleteAllUserNotes();
+    console.log("  - 강의 노트 정보 삭제 완료");
+    await storage.deleteAllVideos();
+    console.log("  - 동영상 정보 삭제 완료");
+    await storage.deleteAllCategories();
+    console.log("  - 카테고리 정보 삭제 완료");
+    console.log("✅ 데이터베이스 초기화 완료.");
+  } catch (error) {
+    console.error("❗️ 데이터 초기화 중 심각한 오류 발생:", error);
+    // 초기화 실패 시 더 이상 진행하지 않음
+    process.exit(1);
+  }
+  // --- 데이터 초기화 종료 ---
+
+  // 새로운 카테고리 목록
+  const newCategories = [
+    { name: "ATPL(Airlines Transport Pilot)", description: "운송용 조종사 과정", icon: "Globe" },
+    { name: "CPL(Commnercial Pilot)", description: "사업용 조종사 과정", icon: "Award" },
+    { name: "IFR(Instrument Flight Rule) Rating", description: "계기 비행 증명 과정", icon: "Radar" },
+    { name: "LSA(Light Sport Aircraft) Pilot", description: "경량항공기 조종사 과정", icon: "Plane" },
+    { name: "LSA(Light Sport Aircraft) Instructor Pilot", description: "경량항공기 교관 과정", icon: "BookUser" },
+    { name: "Multi-Engine Rating", description: "다발 한정 증명 과정", icon: "Aperture" },
+    { name: "Mountain Flying", description: "산악 비행 과정", icon: "Mountain" },
+    { name: "NFQP(Night Flying Qualified Pilot)", description: "야간 비행 자격 과정", icon: "Moon" },
+    { name: "PPL(Private Pilot License)", description: "자가용 조종사 면장 과정", icon: "BadgeCheck" },
+  ];
+
+  // 카테고리 생성
+  for (const categoryData of newCategories) {
+    try {
+      const existing = await storage.getCategoryByName(categoryData.name);
+      if (!existing) {
+        await storage.createCategory(categoryData);
+        console.log(`✅ 카테고리 생성: ${categoryData.name}`);
+      }
+    } catch (error) {
+      console.error(`❗️ "${categoryData.name}" 카테고리 생성 중 오류 발생:`, error);
+    }
+  }
+
+  console.log("🎉 데이터베이스 시드 작업이 완료되었습니다!");
+  console.log("\n📋 계정 정보:");
+  console.log("관리자 계정 - username: admin, password: admin123!");
+  console.log("학생 계정 - username: student1, password: student123!");
+  console.log("\n📝 참고: 관리자 계정으로 로그인하여 /admin 페이지에서 영상을 업로드하세요.");
 }
 
-// 항상 시드 함수 실행
-seedDatabase();
+seed().catch((e) => {
+  console.error("❌ 시드 작업 실패:", e);
+  process.exit(1);
+});
 
-export { seedDatabase }; 
+export { seed }; 

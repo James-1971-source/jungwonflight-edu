@@ -75,13 +75,13 @@ export function Navigation({ user }: NavigationProps) {
                 내 노트
               </Button>
             </Link>
-            <Link href="/dashboard">
-              <Button variant="ghost" className="text-slate-300 hover:text-white">
+            <Link href="/my-courses">
+              <Button variant={location === "/my-courses" ? "default" : "ghost"} className="text-slate-300 hover:text-white">
                 내 강의
               </Button>
             </Link>
-            <Link href="/dashboard">
-              <Button variant="ghost" className="text-slate-300 hover:text-white">
+            <Link href="/my-progress">
+              <Button variant={location === "/my-progress" ? "default" : "ghost"} className="text-slate-300 hover:text-white">
                 진도 현황
               </Button>
             </Link>

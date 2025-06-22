@@ -2,6 +2,8 @@ import { sqliteTable, text, integer, blob, real } from "drizzle-orm/sqlite-core"
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
+import { primaryKey } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -43,12 +45,22 @@ export const userProgress = sqliteTable("user_progress", {
 });
 
 export const userNotes = sqliteTable("user_notes", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  videoId: integer("video_id").references(() => videos.id).notNull(),
+  id: integer("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  videoId: integer("video_id").notNull().references(() => videos.id),
   content: text("content").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const userCourses = sqliteTable("user_courses", {
+  userId: integer("user_id").notNull().references(() => users.id),
+  videoId: integer("video_id").notNull().references(() => videos.id),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
+}, (table) => {
+  return {
+    pk: primaryKey({ columns: [table.userId, table.videoId] }),
+  };
 });
 
 // Relations (동일하게 유지)

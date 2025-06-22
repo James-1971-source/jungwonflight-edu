@@ -19,9 +19,10 @@ export function Sidebar() {
     queryKey: ["/api/categories"],
   });
 
-  const { data: videos = [] } = useQuery<any[]>({
+  const { data: videoData } = useQuery<{ videos: any[] }>({
     queryKey: ["/api/videos"],
   });
+  const videos = videoData?.videos || [];
 
   const { data: progress = [] } = useQuery<any[]>({
     queryKey: ["/api/progress"],
@@ -50,7 +51,7 @@ export function Sidebar() {
   const overallProgress = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
 
   return (
-    <aside className="w-64 bg-slate-800 min-h-screen border-r border-slate-700">
+    <aside className="w-96 bg-slate-800 min-h-screen border-r border-slate-700">
       <div className="p-6">
         <h3 className="text-lg font-semibold text-white mb-4">강의 카테고리</h3>
         <ul className="space-y-2">
@@ -64,17 +65,17 @@ export function Sidebar() {
                 <Link href={`/category/${category.id}`}>
                   <Button
                     variant={isActive ? "default" : "ghost"}
-                    className={`w-full justify-start px-3 py-2 h-auto ${
+                    className={`w-full justify-start px-3 py-3 h-auto ${
                       isActive 
                         ? "bg-aviation-blue text-white" 
                         : "text-slate-300 hover:bg-slate-700 hover:text-white"
                     }`}
                   >
-                    <Icon className="h-4 w-4 mr-3" />
-                    <span className="flex-1 text-left">{category.name}</span>
+                    <Icon className="h-4 w-4 mr-3 flex-shrink-0" />
+                    <span className="flex-1 min-w-0 text-left text-sm leading-tight break-words">{category.name}</span>
                     <Badge 
                       variant={isActive ? "secondary" : "outline"}
-                      className={`ml-2 text-xs ${
+                      className={`ml-2 text-xs flex-shrink-0 ${
                         isActive ? "bg-blue-700 text-white" : "bg-slate-600 text-slate-300"
                       }`}
                     >
