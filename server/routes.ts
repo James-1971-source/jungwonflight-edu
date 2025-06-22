@@ -11,6 +11,7 @@ import multer from "multer";
 import path from "path";
 import { VideoService } from "./videoService";
 import { fileURLToPath } from 'url';
+import connectPgSimple from 'connect-pg-simple';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -46,12 +47,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   });
 
+  const PgStore = connectPgSimple(session);
+
   // Session configuration
   app.use(session({
+    store: new PgStore({
+      conString: process.env.DATABASE_URL,
+      tableName: 'sessions'
+    }),
     secret: process.env.SESSION_SECRET || "avilearn-secret-key",
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+    cookie: { 
+      secure: process.env.NODE_ENV === 'production', 
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    }
   }));
 
   app.use(passport.initialize());
