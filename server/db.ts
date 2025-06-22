@@ -1,8 +1,11 @@
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 import * as schema from "@shared/schema";
+import "dotenv/config";
 
-// SQLite 데이터베이스 파일 경로
-const sqlite = new Database('./database.sqlite');
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not set");
+}
 
-export const db = drizzle(sqlite, { schema });
+const client = postgres(process.env.DATABASE_URL);
+export const db = drizzle(client, { schema });
