@@ -1,6 +1,6 @@
 # JungwonFlight-Edu 🛩️
 
-중원대학교 항공운항학과 온라인 교육 플랫폼 - Google Drive 기반 비디오 학습 관리 시스템 (LMS)
+(주)중원항공 비행교육원 온라인 교육 플랫폼 - Google Drive 기반 비디오 학습 관리 시스템 (LMS)
 
 ## 📋 프로젝트 개요
 
