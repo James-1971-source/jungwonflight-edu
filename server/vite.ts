@@ -72,6 +72,14 @@ export function serveStatic(app: Express) {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const distPath = path.resolve(__dirname, "public");
 
+  console.log(`[DEBUG] Looking for static files in: ${distPath}`);
+  console.log(`[DEBUG] Directory exists: ${fs.existsSync(distPath)}`);
+  
+  if (fs.existsSync(distPath)) {
+    const files = fs.readdirSync(distPath);
+    console.log(`[DEBUG] Files in dist/public:`, files);
+  }
+
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`,

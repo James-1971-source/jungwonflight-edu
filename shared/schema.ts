@@ -1,62 +1,62 @@
-import { sqliteTable, text, integer, blob, real } from "drizzle-orm/sqlite-core";
+import { pgTable, serial, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 import { primaryKey } from "drizzle-orm/sqlite-core";
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  email: text("email").notNull().unique(),
-  role: text("role").notNull().default("student"),
-  isApproved: integer("is_approved", { mode: "boolean" }).notNull().default(false),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: varchar("username", { length: 256 }).notNull().unique(),
+  password: varchar("password", { length: 256 }).notNull(),
+  email: varchar("email", { length: 256 }).notNull().unique(),
+  role: varchar("role", { length: 32 }).notNull().default("student"),
+  isApproved: boolean("is_approved").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const categories = sqliteTable("categories", {
+export const categories = pgTable("categories", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  description: text("description"),
-  icon: text("icon").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: varchar("description", { length: 256 }),
+  icon: varchar("icon", { length: 256 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const videos = sqliteTable("videos", {
+export const videos = pgTable("videos", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  title: text("title").notNull(),
-  description: text("description"),
-  googleDriveFileId: text("google_drive_file_id"), // nullable로 변경
-  thumbnailUrl: text("thumbnail_url"),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: varchar("description", { length: 256 }),
+  googleDriveFileId: varchar("google_drive_file_id", { length: 256 }), // nullable로 변경
+  thumbnailUrl: varchar("thumbnail_url", { length: 256 }),
   duration: integer("duration"),
   categoryId: integer("category_id").references(() => categories.id),
   uploadedBy: integer("uploaded_by").references(() => users.id),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const userProgress = sqliteTable("user_progress", {
+export const userProgress = pgTable("user_progress", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").references(() => users.id).notNull(),
   videoId: integer("video_id").references(() => videos.id).notNull(),
   watchedDuration: integer("watched_duration").default(0),
-  completed: integer("completed", { mode: "boolean" }).default(false),
-  lastWatchedAt: integer("last_watched_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  completed: boolean("completed").default(false),
+  lastWatchedAt: timestamp("last_watched_at", { withTimezone: true }).defaultNow(),
 });
 
-export const userNotes = sqliteTable("user_notes", {
+export const userNotes = pgTable("user_notes", {
   id: integer("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   videoId: integer("video_id").notNull().references(() => videos.id),
-  content: text("content").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
+  content: varchar("content", { length: 256 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const userCourses = sqliteTable("user_courses", {
+export const userCourses = pgTable("user_courses", {
   userId: integer("user_id").notNull().references(() => users.id),
   videoId: integer("video_id").notNull().references(() => videos.id),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at", { withTimezone: true }).default(sql`CURRENT_TIMESTAMP`),
 }, (table) => {
   return {
     pk: primaryKey({ columns: [table.userId, table.videoId] }),
