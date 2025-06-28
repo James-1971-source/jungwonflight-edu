@@ -74,7 +74,7 @@ export default function Dashboard() {
   if (userLoading) {
     return <div className="min-h-screen bg-slate-900" />;
   }
-  
+
   if (!user) {
     return null; // Should be redirected by ProtectedRoute
   }
@@ -106,25 +106,25 @@ export default function Dashboard() {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {videosLoading ? (
+          {videosLoading ? (
               [...Array(8)].map((_, i) => (
                 <div key={i} className="bg-slate-800 rounded-lg overflow-hidden">
                   <Skeleton className="w-full h-40" />
                   <div className="p-4 space-y-2">
                     <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-10 w-full mt-2" />
-                  </div>
+              </div>
                 </div>
               ))
-            ) : videos.length === 0 ? (
+          ) : videos.length === 0 ? (
               <div className="col-span-full">
                 <Alert className="border-slate-700 bg-slate-800">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
                     아직 등록된 동영상이 없습니다.
-                  </AlertDescription>
-                </Alert>
+              </AlertDescription>
+            </Alert>
               </div>
             ) : (
               videos.map(video => {
@@ -164,11 +164,11 @@ export default function Dashboard() {
                           </>
                         )}
                       </Button>
-                    </div>
-                  </div>
+              </div>
+            </div>
                 )
               })
-            )}
+          )}
           </div>
         </main>
       </div>

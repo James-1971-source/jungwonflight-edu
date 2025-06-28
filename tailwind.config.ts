@@ -86,16 +86,6 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography"), require("@tailwindcss/line-clamp")],
-  safelist: [
-    {
-      pattern: /bg-\[hsl\(var\(--.*\)\)\]/,
-    },
-    {
-      pattern: /text-\[hsl\(var\(--.*\)\)\]/,
-    },
-    {
-      pattern: /border-\[hsl\(var\(--.*\)\)\]/,
-    },
-  ],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+
 } satisfies Config;

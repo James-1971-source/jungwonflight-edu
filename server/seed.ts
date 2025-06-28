@@ -4,42 +4,6 @@ import bcrypt from "bcrypt";
 async function seed() {
   console.log("🌱 데이터베이스 시드 작업을 시작합니다...");
 
-  // 관리자 계정 생성
-  try {
-    const adminUser = await storage.getUserByUsername("admin");
-    if (!adminUser) {
-      const hashedPassword = await bcrypt.hash("admin123!", 10);
-      await storage.createUser({
-        username: "admin",
-        email: "admin@jungwonflight.edu",
-        password: hashedPassword,
-        role: "admin",
-        isApproved: true,
-      });
-      console.log("✅ 관리자 계정 생성 완료 (username: admin, password: admin123!)");
-    }
-  } catch (error) {
-    console.error("❗️ 관리자 계정 생성 중 오류 발생:", error);
-  }
-
-  // 학생 계정 생성
-  try {
-    const studentUser = await storage.getUserByUsername("student1");
-    if (!studentUser) {
-        const hashedPassword = await bcrypt.hash("student123!", 10);
-        await storage.createUser({
-            username: "student1",
-            email: "student1@example.com",
-            password: hashedPassword,
-            role: "student",
-            isApproved: true
-        });
-        console.log("✅ 학생 계정 생성 완료 (username: student1, password: student123!)");
-    }
-  } catch(error) {
-      console.error("❗️ 학생 계정 생성 중 오류 발생:", error);
-  }
-
   // --- 데이터 초기화 시작 ---
   // 연결된 데이터부터 순서대로 삭제해야 외래 키 제약 조건 오류가 발생하지 않습니다.
   console.log("🧹 데이터베이스 초기화를 시작합니다...");
@@ -86,6 +50,46 @@ async function seed() {
     } catch (error) {
       console.error(`❗️ "${categoryData.name}" 카테고리 생성 중 오류 발생:`, error);
     }
+  }
+
+  // 관리자 계정 생성
+  try {
+    const adminUser = await storage.getUserByUsername("admin");
+    if (!adminUser) {
+      const hashedPassword = await bcrypt.hash("admin123!", 10);
+      await storage.createUser({
+        username: "admin",
+        email: "admin@jungwonflight.edu",
+        password: hashedPassword,
+        role: "admin",
+        isApproved: true,
+      });
+      console.log("✅ 관리자 계정 생성 완료 (username: admin, password: admin123!)");
+    } else {
+      console.log("✅ 관리자 계정이 이미 존재합니다.");
+    }
+  } catch (error) {
+    console.error("❗️ 관리자 계정 생성 중 오류 발생:", error);
+  }
+
+  // 학생 계정 생성
+  try {
+    const studentUser = await storage.getUserByUsername("student1");
+    if (!studentUser) {
+        const hashedPassword = await bcrypt.hash("student123!", 10);
+        await storage.createUser({
+            username: "student1",
+            email: "student1@example.com",
+            password: hashedPassword,
+            role: "student",
+            isApproved: true
+        });
+        console.log("✅ 학생 계정 생성 완료 (username: student1, password: student123!)");
+    } else {
+        console.log("✅ 학생 계정이 이미 존재합니다.");
+    }
+  } catch(error) {
+      console.error("❗️ 학생 계정 생성 중 오류 발생:", error);
   }
 
   console.log("🎉 데이터베이스 시드 작업이 완료되었습니다!");

@@ -47,14 +47,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   });
 
-  const PgStore = connectPgSimple(session);
-
-  // Session configuration
+  // Session configuration (using memory store for now)
   app.use(session({
-    store: new PgStore({
-      conString: process.env.DATABASE_URL,
-      tableName: 'sessions'
-    }),
     secret: process.env.SESSION_SECRET || "avilearn-secret-key",
     resave: false,
     saveUninitialized: false,

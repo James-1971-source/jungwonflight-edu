@@ -45,7 +45,7 @@ export default function VideoPlayerPage() {
     return (
       <div className="min-h-screen bg-slate-900">
         <Navigation user={user!} />
-         <div className="flex">
+          <div className="flex">
             <Sidebar />
             <main className="flex-1 p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -54,8 +54,8 @@ export default function VideoPlayerPage() {
                     </div>
                     <div className="lg:col-span-1">
                         <Skeleton className="h-96 w-full" />
-                    </div>
-                </div>
+            </div>
+          </div>
             </main>
         </div>
       </div>
