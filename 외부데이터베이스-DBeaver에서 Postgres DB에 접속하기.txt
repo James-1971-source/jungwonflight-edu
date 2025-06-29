@@ -1,0 +1,17 @@
+- cursor를 통해 동영상 온라인 강의 플랫폼을 만들었으나 이것은 내 로컬PC에서 만들었으므로, 이 강의 플랫폼은 나만 사용가능함
+- 이 플랫폼은 GitHub에도 올렸음
+- 이 플랫폼을 웹페이지에 올려서 다른 사람들에게도 공유해서 접속하게 하려면 Railway를 통해 배포를 해야 함
+- Railway 를 설치하고 연동시키면, 내가 이 플랫폼을 GitHub에 올렸으므로, Railway는 자동으로 GitHub의 내 코드와 연동해서 자동 배포를 함
+- 즉, 내가 소스를 GitHUB에 올리거나 수정한 코드를 GitHub에 커밋하는 순간 Railway는 자동으로 감지하고 배포를 함.
+- 배포중에 에러가 발생할 수 있음. 그때마다 Cursor에게 물어서 해결할것
+- Railway가 배포를 성공하면 Active 형태로 됨
+Railway 내의 내 서비스 주소 : https://railway.com/project/37bb3d7d-a470-44a7-a427-f99f9bbd3539/service/b39e5354-ecb5-44fe-afd6-1ac8c5a7fbc1/variables?environmentId=4bd6fd29-e044-4744-b1c5-cd8e2056c020
+
+
+- Railway 에서는 Postgres 라는 DataBase 를 사용함
+- Postgres Database 는 내 플랫폼과 연결되어 데이터베이스 내의 다양한 값들을 수정하고 업데이트 할수 있음
+- 그러나 무료버전에서는 내가 직접 Postgres에서 Connect 를 할수 없음(Connect 버튼이 제공안됨)
+   -> 외부 Database 툴을 사용(예: DBeaver) -> DBeaver 를 설치해서 Railway 의 Postgres에 연결하여 작업함
+   -> DBeaver에서 Postgres 를 선택하고 연결을 위한 각종 값들을 입력한후 연결함. 
+   -> 이 연결을 위한 값들이 입력된 캡쳐 파일 참고할것. (외부데이터베이스-DBeaver에서 Postgres DB에 접속하기.PNG)
+
