@@ -5,6 +5,8 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
+app.set('trust proxy', 1); // Railway, Heroku 등 프록시 환경에서 secure 쿠키 동작 보장
+
 app.use(cors({
   origin: "https://jungwonflight-edu-production.up.railway.app", // 실제 Railway 프론트엔드 도메인
   credentials: true // 쿠키 허용
