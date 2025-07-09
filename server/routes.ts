@@ -53,9 +53,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     resave: false,
     saveUninitialized: false,
     cookie: { 
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      secure: true, // Railway는 https 환경이므로 true
+      sameSite: 'none', // 크로스도메인 허용
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30일
     }
   }));
 

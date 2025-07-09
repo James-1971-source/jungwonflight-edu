@@ -6,8 +6,8 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 
 app.use(cors({
-  origin: "https://your-railway-app.up.railway.app", // 실제 Railway 프론트엔드 도메인으로 변경
-  credentials: true
+  origin: "https://jungwonflight-edu-production.up.railway.app", // 실제 Railway 프론트엔드 도메인
+  credentials: true // 쿠키 허용
 }));
 
 app.use(express.json());

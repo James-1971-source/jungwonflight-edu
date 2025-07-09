@@ -15,3 +15,9 @@ Railway 내의 내 서비스 주소 : https://railway.com/project/37bb3d7d-a470-
    -> DBeaver에서 Postgres 를 선택하고 연결을 위한 각종 값들을 입력한후 연결함. 
    -> 이 연결을 위한 값들이 입력된 캡쳐 파일 참고할것. (외부데이터베이스-DBeaver에서 Postgres DB에 접속하기.PNG)
 
+
+
+[최종 확인 결과] 
+Railway 의 Postgres 에서도 DataBase 사용 가능함. 즉, 외부 DB (DBeaver 등) 사용할 필요없음
+Postgres 의 DB 각 값에 필요한 데이터 입력하면 됨. 단, 중원비행교육원의 강의 플랫폼 에서는 관리자 모드로 들어가면 교육생 추가, 영상 업로드 등을 할수 있으므로 Postgres 사용할 필요없음. 단, 관리자 관련 정보나 카테고리 신규 생성 등은 Postgres 를 통해 생성할것.
+
