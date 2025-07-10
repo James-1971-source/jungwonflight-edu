@@ -292,15 +292,24 @@ export default function Admin() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number) => {
-      const response = await apiRequest("DELETE", `/api/users/${userId}`);
       try {
-        return await response.json();
-      } catch {
+        const response = await apiRequest("DELETE", `/api/users/${userId}`);
+        try {
+          return await response.json();
+        } catch {
+          return {};
+        }
+      } catch (error: any) {
+        // 404 에러만 throw, 나머지는 성공으로 간주
+        if (error.message && error.message.startsWith("404")) {
+          throw error;
+        }
+        // 204 등 본문 없는 성공은 성공으로 처리
         return {};
       }
     },
     onSuccess: async () => {
-      await queryClient.refetchQueries({ queryKey: ["/api/users"] }); // refetch 완료 후 UI 갱신
+      await queryClient.refetchQueries({ queryKey: ["/api/users"] });
       setDeleteUserId(null);
       toast({
         title: "🗑️ 교육생 삭제 완료",
