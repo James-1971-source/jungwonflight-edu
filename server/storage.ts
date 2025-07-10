@@ -111,9 +111,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(id: number): Promise<boolean> {
-    const result = await db.delete(users).where(eq(users.id, id));
-    console.log('deleteUser result:', result); // 실제 반환값 확인
-    return (result.rowCount ?? result.changes ?? 0) > 0;
+    await db.delete(users).where(eq(users.id, id));
+    // 삭제 후 실제로 존재하는지 재확인
+    const user = await this.getUser(id);
+    return !user;
   }
 
   async deleteUserProgress(userId: number): Promise<void> {
