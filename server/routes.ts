@@ -246,8 +246,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // User deletion (admin only)
   app.delete("/api/users/:id", requireAdmin, async (req, res) => {
-    // 임시: 삭제 로직과 상관없이 항상 200 반환
-    res.json({ message: "사용자가 삭제되었습니다." });
+    try {
+      const { id } = req.params;
+      const userId = parseInt(id);
+
+      // Check if user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      }
+
+      // Prevent deleting an admin
+      if (user.role === 'admin') {
+        return res.status(400).json({ message: "관리자는 삭제할 수 없습니다." });
+      }
+
+      // Delete user's progress and notes first
+      await storage.deleteUserProgress(userId);
+      await storage.deleteUserNotes(userId);
+
+      // Delete user
+      const success = await storage.deleteUser(userId);
+      if (!success) {
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      }
+
+      res.json({ message: "사용자가 삭제되었습니다." });
+    } catch (error) {
+      console.error('사용자 삭제 오류:', error);
+      res.status(500).json({ message: "사용자 삭제 중 오류가 발생했습니다." });
+    }
   });
 
   // Categories routes

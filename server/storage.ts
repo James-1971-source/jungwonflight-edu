@@ -112,7 +112,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
-    // PostgreSQL 등에서는 rowCount가 실제로 삭제된 행의 수를 반환함
+    console.log('deleteUser result:', result); // 실제 반환값 확인
     return (result.rowCount ?? result.changes ?? 0) > 0;
   }
 
