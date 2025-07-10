@@ -110,6 +110,7 @@ export default function Admin() {
   const { data: users = [] } = useQuery<any[]>({
     queryKey: ["/api/users"],
     enabled: !!user && user.role === 'admin',
+    staleTime: 0, // 캐시를 즉시 만료시킴
   });
 
   const videoMutation = useMutation({
@@ -297,7 +298,7 @@ export default function Admin() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.refetchQueries({ queryKey: ["/api/users"] }); // 강제 refetch
       setDeleteUserId(null);
       toast({
         title: "🗑️ 교육생 삭제 완료",
