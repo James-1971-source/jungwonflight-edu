@@ -111,6 +111,8 @@ export default function Admin() {
     queryKey: ["/api/users"],
     enabled: !!user && user.role === 'admin',
     staleTime: 0, // 캐시를 즉시 만료시킴
+    cacheTime: 0, // 캐시를 즉시 삭제
+    refetchOnWindowFocus: true, // 포커스 시 강제 새로고침
   });
 
   const videoMutation = useMutation({
@@ -297,8 +299,8 @@ export default function Admin() {
         return {};
       }
     },
-    onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["/api/users"] }); // 강제 refetch
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/users"] }); // refetch 완료 후 UI 갱신
       setDeleteUserId(null);
       toast({
         title: "🗑️ 교육생 삭제 완료",
