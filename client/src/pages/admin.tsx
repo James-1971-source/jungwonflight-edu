@@ -308,11 +308,19 @@ export default function Admin() {
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "삭제 실패",
-        description: error.message || "교육생 삭제 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
+      if (error.message && error.message.startsWith("404")) {
+        toast({
+          title: "이미 삭제된 사용자",
+          description: "이 사용자는 이미 삭제되었거나 존재하지 않습니다.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "삭제 실패",
+          description: error.message || "교육생 삭제 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
