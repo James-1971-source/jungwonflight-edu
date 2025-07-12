@@ -204,6 +204,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createVideo(video: InsertVideo): Promise<Video> {
+    // id 필드가 있으면 무조건 제거
+    if ('id' in video) {
+      delete (video as any).id;
+    }
     // undefined 필드 제거
     const cleanVideo = Object.fromEntries(
       Object.entries(video).filter(([_, v]) => v !== undefined)
