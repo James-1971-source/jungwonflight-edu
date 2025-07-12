@@ -208,9 +208,9 @@ export class DatabaseStorage implements IStorage {
     if ('id' in video) {
       delete (video as any).id;
     }
-    // undefined 필드 제거
+    // undefined, id 필드 모두 제거 (2중 필터링)
     const cleanVideo = Object.fromEntries(
-      Object.entries(video).filter(([_, v]) => v !== undefined)
+      Object.entries(video).filter(([k, v]) => k !== "id" && v !== undefined)
     );
     const result = await db.insert(videos).values(cleanVideo).returning();
     return result[0];
