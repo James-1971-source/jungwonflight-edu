@@ -353,15 +353,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const processedVideo = await VideoService.processVideo(req.file);
 
       // 데이터베이스에 저장 (파일 경로를 googleDriveFileId에 저장)
-      const video = await storage.createVideo({
+      const videoData = {
         title,
         description: description || "",
-        googleDriveFileId: `local:${processedVideo.filename}`, // 로컬 파일 식별자
+        googleDriveFileId: `local:${processedVideo.filename}`,
         thumbnailUrl: processedVideo.thumbnailPath,
         duration: processedVideo.duration,
         categoryId: categoryId ? parseInt(categoryId) : undefined,
         uploadedBy: req.user!.id
-      });
+      };
+      console.log("업로드 직전 videoData:", videoData);
+      const video = await storage.createVideo(videoData);
       
       res.status(201).json(video);
     } catch (error: any) {

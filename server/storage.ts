@@ -204,7 +204,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createVideo(video: InsertVideo): Promise<Video> {
-    const result = await db.insert(videos).values(video).returning();
+    // undefined 필드 제거
+    const cleanVideo = Object.fromEntries(
+      Object.entries(video).filter(([_, v]) => v !== undefined)
+    );
+    const result = await db.insert(videos).values(cleanVideo).returning();
     return result[0];
   }
 
