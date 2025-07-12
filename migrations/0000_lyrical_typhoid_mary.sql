@@ -1,5 +1,5 @@
 CREATE TABLE "categories" (
-	"id" integer PRIMARY KEY NOT NULL,
+	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(256) NOT NULL,
 	"description" varchar(256),
 	"icon" varchar(256) NOT NULL,
@@ -9,11 +9,12 @@ CREATE TABLE "categories" (
 CREATE TABLE "user_courses" (
 	"user_id" integer NOT NULL,
 	"video_id" integer NOT NULL,
-	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT "user_courses_user_id_video_id_pk" PRIMARY KEY("user_id","video_id")
 );
 --> statement-breakpoint
 CREATE TABLE "user_notes" (
-	"id" integer PRIMARY KEY NOT NULL,
+	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" integer NOT NULL,
 	"video_id" integer NOT NULL,
 	"content" varchar(256) NOT NULL,
@@ -22,7 +23,7 @@ CREATE TABLE "user_notes" (
 );
 --> statement-breakpoint
 CREATE TABLE "user_progress" (
-	"id" integer PRIMARY KEY NOT NULL,
+	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" integer NOT NULL,
 	"video_id" integer NOT NULL,
 	"watched_duration" integer DEFAULT 0,
@@ -43,7 +44,7 @@ CREATE TABLE "users" (
 );
 --> statement-breakpoint
 CREATE TABLE "videos" (
-	"id" integer PRIMARY KEY NOT NULL,
+	"id" serial PRIMARY KEY NOT NULL,
 	"title" varchar(256) NOT NULL,
 	"description" varchar(256),
 	"google_drive_file_id" varchar(256),

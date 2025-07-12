@@ -3,7 +3,7 @@ import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
-import { primaryKey } from "drizzle-orm/sqlite-core";
+import { primaryKey } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -16,7 +16,7 @@ export const users = pgTable("users", {
 });
 
 export const categories = pgTable("categories", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 256 }).notNull(),
   description: varchar("description", { length: 256 }),
   icon: varchar("icon", { length: 256 }).notNull(),
@@ -24,7 +24,7 @@ export const categories = pgTable("categories", {
 });
 
 export const videos = pgTable("videos", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+  id: serial("id").primaryKey(),
   title: varchar("title", { length: 256 }).notNull(),
   description: varchar("description", { length: 256 }),
   googleDriveFileId: varchar("google_drive_file_id", { length: 256 }), // nullable로 변경
@@ -36,7 +36,7 @@ export const videos = pgTable("videos", {
 });
 
 export const userProgress = pgTable("user_progress", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+  id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   videoId: integer("video_id").references(() => videos.id).notNull(),
   watchedDuration: integer("watched_duration").default(0),
@@ -45,7 +45,7 @@ export const userProgress = pgTable("user_progress", {
 });
 
 export const userNotes = pgTable("user_notes", {
-  id: integer("id").primaryKey(),
+  id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   videoId: integer("video_id").notNull().references(() => videos.id),
   content: varchar("content", { length: 256 }).notNull(),

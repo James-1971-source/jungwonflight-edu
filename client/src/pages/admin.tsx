@@ -293,7 +293,7 @@ export default function Admin() {
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number) => {
       try {
-        const response = await apiRequest("DELETE", `/api/users/${userId}`);
+      const response = await apiRequest("DELETE", `/api/users/${userId}`);
         try {
           return await response.json();
         } catch {
@@ -324,11 +324,11 @@ export default function Admin() {
           variant: "destructive",
         });
       } else {
-        toast({
-          title: "삭제 실패",
-          description: error.message || "교육생 삭제 중 오류가 발생했습니다.",
-          variant: "destructive",
-        });
+      toast({
+        title: "삭제 실패",
+        description: error.message || "교육생 삭제 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
       }
     },
   });
