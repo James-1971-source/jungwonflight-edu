@@ -261,7 +261,8 @@ export class DatabaseStorage implements IStorage {
       console.log('직접 SQL 쿼리:', sql);
       console.log('SQL 값들:', values);
       
-      const result = await db.execute(sql);
+      // 반드시 values를 두 번째 인자로 넘겨야 함!
+      const result = await db.execute(sql, values);
       return result[0] as Video;
     }
   }
