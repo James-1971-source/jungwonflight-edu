@@ -387,42 +387,42 @@ export class DatabaseStorage implements IStorage {
   async deleteAllUserNotes(): Promise<void> {
     await db.delete(userNotes).execute();
   }
+
+  async createVideoWithPgDriver(video: InsertVideo): Promise<any> {
+    // id, undefined 필드 제거 및 snake_case 변환
+    let cleanVideo = Object.fromEntries(
+      Object.entries(video).filter(([k, v]) => k !== "id" && v !== undefined)
+    );
+    cleanVideo = toSnakeCase(cleanVideo);
+
+    // 컬럼명과 값 순서를 명확히 지정
+    const columns = [
+      "title",
+      "description",
+      "google_drive_file_id",
+      "thumbnail_url",
+      "duration",
+      "category_id",
+      "uploaded_by"
+    ];
+    const values = [
+      cleanVideo.title,
+      cleanVideo.description,
+      cleanVideo.google_drive_file_id,
+      cleanVideo.thumbnail_url,
+      cleanVideo.duration,
+      cleanVideo.category_id,
+      cleanVideo.uploaded_by
+    ];
+
+    // 쿼리 실행
+    const result = await sql`
+      INSERT INTO videos (${sql(columns)}) 
+      VALUES (${sql(values)}) 
+      RETURNING *
+    `;
+    return result[0];
+  }
 }
 
 export const storage = new DatabaseStorage();
-
-async createVideoWithPgDriver(video: InsertVideo): Promise<any> {
-  // id, undefined 필드 제거 및 snake_case 변환
-  let cleanVideo = Object.fromEntries(
-    Object.entries(video).filter(([k, v]) => k !== "id" && v !== undefined)
-  );
-  cleanVideo = toSnakeCase(cleanVideo);
-
-  // 컬럼명과 값 순서를 명확히 지정
-  const columns = [
-    "title",
-    "description",
-    "google_drive_file_id",
-    "thumbnail_url",
-    "duration",
-    "category_id",
-    "uploaded_by"
-  ];
-  const values = [
-    cleanVideo.title,
-    cleanVideo.description,
-    cleanVideo.google_drive_file_id,
-    cleanVideo.thumbnail_url,
-    cleanVideo.duration,
-    cleanVideo.category_id,
-    cleanVideo.uploaded_by
-  ];
-
-  // 쿼리 실행
-  const result = await pgSql`
-    INSERT INTO videos (${pgSql(columns)}) 
-    VALUES (${pgSql(values)}) 
-    RETURNING *
-  `;
-  return result[0];
-}
