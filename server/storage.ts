@@ -237,18 +237,17 @@ export class DatabaseStorage implements IStorage {
     const columns = Object.keys(cleanVideo);
     const values = Object.values(cleanVideo);
 
-    // ★★★ 반드시 아래 로그를 추가하세요 ★★★
-    console.log('최종 insert columns:', columns);
-    console.log('최종 insert values:', values);
-    console.log('최종 cleanVideo:', cleanVideo);
+    const sqlQuery = sql`
+      INSERT INTO videos (${sql.raw(columns.join(', '))})
+      VALUES (${sql.join(values, sql.raw(', '))})
+      RETURNING *
+    `;
 
-    try {
-      const result = await db.insert(videos).values(cleanVideo).returning();
-      return result[0];
-    } catch (error) {
-      console.log('insert 에러:', error);
-      throw error;
-    }
+    console.log('직접 SQL 쿼리:', sqlQuery);
+    console.log('SQL 값들:', values);
+
+    const result = await db.execute(sqlQuery);
+    return result[0] as Video;
   }
 
   async updateVideo(id: number, updates: Partial<InsertVideo>): Promise<Video | undefined> {
