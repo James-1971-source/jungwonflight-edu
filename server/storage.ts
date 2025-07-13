@@ -203,15 +203,25 @@ export class DatabaseStorage implements IStorage {
     return video || undefined;
   }
 
+  function toSnakeCase(obj: Record<string, any>) {
+    return Object.fromEntries(
+      Object.entries(obj).map(([k, v]) => [
+        k.replace(/([A-Z])/g, "_$1").toLowerCase(),
+        v
+      ])
+    );
+  }
+
   async createVideo(video: InsertVideo): Promise<Video> {
     // id 필드가 있으면 무조건 제거
     if ('id' in video) {
       delete (video as any).id;
     }
     // undefined, id 필드 모두 제거 (2중 필터링)
-    const cleanVideo = Object.fromEntries(
+    let cleanVideo = Object.fromEntries(
       Object.entries(video).filter(([k, v]) => k !== "id" && v !== undefined)
-    ) as InsertVideo;
+    );
+    cleanVideo = toSnakeCase(cleanVideo); // ← snake_case 변환 추가
     
     // 쿼리 로그 출력
     const insertQuery = db.insert(videos).values(cleanVideo).returning();
