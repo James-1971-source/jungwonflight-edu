@@ -8,6 +8,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -231,38 +232,35 @@ export class DatabaseStorage implements IStorage {
     let cleanVideo = Object.fromEntries(
       Object.entries(video).filter(([k, v]) => k !== "id" && v !== undefined)
     );
-    cleanVideo = toSnakeCase(cleanVideo); // ← snake_case 변환 추가
-    
+    cleanVideo = toSnakeCase(cleanVideo);
+
     // 쿼리 로그 출력
-    const insertQuery = db.insert(videos).values(cleanVideo).returning();
     console.log('=== DRIZZLE INSERT QUERY DEBUG ===');
     console.log('Clean video data:', cleanVideo);
-    console.log('Generated SQL:', insertQuery.toSQL());
-    console.log('===================================');
-    
+
+    // 1. drizzle-orm insert 우선 시도
     try {
-      // 먼저 drizzle-orm으로 시도
-      const result = await insertQuery;
+      const result = await db.insert(videos).values(cleanVideo).returning();
       return result[0];
     } catch (error) {
-      console.log('Drizzle ORM insert 실패, 직접 SQL로 시도:', error);
-      
-      // drizzle-orm이 실패하면 직접 SQL 사용
+      console.log('Drizzle ORM insert 실패, drizzle-orm sql 템플릿으로 우회:', error);
+
+      // 2. drizzle-orm sql 템플릿으로 직접 쿼리
       const columns = Object.keys(cleanVideo);
       const values = Object.values(cleanVideo);
-      const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
-      
-      const sql = `
-        INSERT INTO videos (${columns.join(', ')})
-        VALUES (${placeholders})
+
+      // 컬럼명은 raw로, 값은 join으로 안전하게 바인딩
+      const sqlQuery = sql`
+        INSERT INTO videos (${sql.raw(columns.join(', '))})
+        VALUES (${sql.join(values, sql.raw(', '))})
         RETURNING *
       `;
-      
-      console.log('직접 SQL 쿼리:', sql);
+
+      console.log('직접 SQL 쿼리:', sqlQuery);
       console.log('SQL 값들:', values);
-      
-      // 반드시 values를 두 번째 인자로 넘겨야 함!
-      const result = await db.execute(sql, values);
+
+      const result = await db.execute(sqlQuery);
+      // drizzle-orm execute는 RowList 반환, 첫 번째 값 반환
       return result[0] as Video;
     }
   }
