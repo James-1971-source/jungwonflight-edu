@@ -6,9 +6,8 @@ import {
   type UserProgress, type InsertUserProgress,
   type UserNote, type InsertUserNote
 } from "@shared/schema";
-import { db } from "./db";
+import { sql } from "./db";
 import { eq, and, desc } from "drizzle-orm";
-import { sql } from "drizzle-orm";
 import { sql as pgSql } from './db'; // 위에서 만든 sql 인스턴스 import
 
 export interface IStorage {
@@ -78,140 +77,132 @@ function toSnakeCase(obj: Record<string, any>) {
 export class DatabaseStorage implements IStorage {
   // Users
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await sql`SELECT * FROM users WHERE id = ${id}`;
     return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await sql`SELECT * FROM users WHERE username = ${username}`;
     return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await sql`SELECT * FROM users WHERE email = ${email}`;
     return user || undefined;
   }
 
   async getUserByRole(role: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.role, role));
+    const [user] = await sql`SELECT * FROM users WHERE role = ${role}`;
     return user || undefined;
   }
 
   async getUsersByRole(role: string): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.role, role));
+    return await sql`SELECT * FROM users WHERE role = ${role} ORDER BY created_at DESC`;
   }
 
   async getUsers(): Promise<User[]> {
-    return await db.select().from(users).orderBy(desc(users.createdAt));
+    return await sql`SELECT * FROM users ORDER BY created_at DESC`;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
+    const [user] = await sql`
+      INSERT INTO users (username, email, password, role)
+      VALUES (${insertUser.username}, ${insertUser.email}, ${insertUser.password}, ${insertUser.role})
+      RETURNING *
+    `;
     return user;
   }
 
   async updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined> {
-    const [user] = await db
-      .update(users)
-      .set(updates)
-      .where(eq(users.id, id))
-      .returning();
+    const [user] = await sql`
+      UPDATE users SET ${sql(Object.keys(updates).map(k => `${k} = ${sql(updates[k])}`))}
+      WHERE id = ${id}
+      RETURNING *
+    `;
     return user || undefined;
   }
 
   async deleteUser(id: number): Promise<boolean> {
-    await db.delete(users).where(eq(users.id, id));
+    await sql`DELETE FROM users WHERE id = ${id}`;
     // 삭제 후 실제로 존재하는지 재확인
     const user = await this.getUser(id);
     return !user;
   }
 
   async deleteUserProgress(userId: number): Promise<void> {
-    await db.delete(userProgress).where(eq(userProgress.userId, userId));
+    await sql`DELETE FROM user_progress WHERE user_id = ${userId}`;
   }
 
   async deleteUserNotes(userId: number): Promise<void> {
-    await db.delete(userNotes).where(eq(userNotes.userId, userId));
+    await sql`DELETE FROM user_notes WHERE user_id = ${userId}`;
   }
 
   // My Courses
   async getUserCourses(userId: number): Promise<Video[]> {
-    const result = await db
-      .select({ video: videos })
-      .from(userCourses)
-      .leftJoin(videos, eq(userCourses.videoId, videos.id))
-      .where(eq(userCourses.userId, userId))
-      .orderBy(desc(userCourses.createdAt));
+    const result = await sql`
+      SELECT v.* FROM user_courses uc
+      LEFT JOIN videos v ON uc.video_id = v.id
+      WHERE uc.user_id = ${userId}
+      ORDER BY uc.created_at DESC
+    `;
     
-    return result.map(r => r.video).filter((v): v is Video => v !== null);
+    return result.map(r => r as Video).filter((v): v is Video => v !== null);
   }
 
   async addUserCourse(userId: number, videoId: number): Promise<void> {
-    await db.insert(userCourses).values({ userId, videoId }).onConflictDoNothing();
+    await sql`INSERT INTO user_courses (user_id, video_id) VALUES (${userId}, ${videoId}) ON CONFLICT DO NOTHING`;
   }
 
   async removeUserCourse(userId: number, videoId: number): Promise<void> {
-    await db.delete(userCourses).where(
-      and(
-        eq(userCourses.userId, userId),
-        eq(userCourses.videoId, videoId)
-      )
-    );
+    await sql`DELETE FROM user_courses WHERE user_id = ${userId} AND video_id = ${videoId}`;
   }
 
   async getUserCourseIds(userId: number): Promise<number[]> {
-    const result = await db
-      .select({ videoId: userCourses.videoId })
-      .from(userCourses)
-      .where(eq(userCourses.userId, userId));
-    return result.map(r => r.videoId);
+    const result = await sql`SELECT video_id FROM user_courses WHERE user_id = ${userId}`;
+    return result.map(r => r.video_id);
   }
 
   // Categories
   async getCategories(): Promise<Category[]> {
-    return await db.select().from(categories).orderBy(categories.name);
+    return await sql`SELECT * FROM categories ORDER BY name`;
   }
 
   async getCategoryByName(name: string): Promise<Category | undefined> {
-    const [category] = await db.select().from(categories).where(eq(categories.name, name));
+    const [category] = await sql`SELECT * FROM categories WHERE name = ${name}`;
     return category || undefined;
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
-    const [newCategory] = await db
-      .insert(categories)
-      .values(category)
-      .returning();
+    const [newCategory] = await sql`
+      INSERT INTO categories (name)
+      VALUES (${category.name})
+      RETURNING *
+    `;
     return newCategory;
   }
 
   async deleteAllCategories(): Promise<void> {
-    await db.delete(categories).execute();
+    await sql`DELETE FROM categories`;
   }
 
   // Videos
   async getVideos(): Promise<Video[]> {
-    return await db.select().from(videos).orderBy(desc(videos.createdAt));
+    return await sql`SELECT * FROM videos ORDER BY created_at DESC`;
   }
 
   async getVideosByCategory(categoryId: number): Promise<Video[]> {
-    return await db
-      .select()
-      .from(videos)
-      .where(eq(videos.categoryId, categoryId))
-      .orderBy(desc(videos.createdAt));
+    return await sql`
+      SELECT * FROM videos WHERE category_id = ${categoryId} ORDER BY created_at DESC
+    `;
   }
 
   async getVideo(id: number): Promise<Video | undefined> {
-    const [video] = await db.select().from(videos).where(eq(videos.id, id));
+    const [video] = await sql`SELECT * FROM videos WHERE id = ${id}`;
     return video || undefined;
   }
 
   async getVideoByTitle(title: string): Promise<Video | undefined> {
-    const [video] = await db.select().from(videos).where(eq(videos.title, title));
+    const [video] = await sql`SELECT * FROM videos WHERE title = ${title}`;
     return video || undefined;
   }
 
@@ -264,31 +255,35 @@ export class DatabaseStorage implements IStorage {
     console.log('최종 직접 SQL 쿼리:', sqlQuery);
     console.log('최종 SQL 값들:', values);
 
-    const result = await db.execute(sqlQuery);
+    const result = await sql`
+      INSERT INTO videos (${sql(columns)}) 
+      VALUES (${sql(values)}) 
+      RETURNING *
+    `;
     return result[0] as Video;
   }
 
   async updateVideo(id: number, updates: Partial<InsertVideo>): Promise<Video | undefined> {
-    const [video] = await db
-      .update(videos)
-      .set(updates)
-      .where(eq(videos.id, id))
-      .returning();
+    const [video] = await sql`
+      UPDATE videos SET ${sql(Object.keys(updates).map(k => `${k} = ${sql(updates[k])}`))}
+      WHERE id = ${id}
+      RETURNING *
+    `;
     return video || undefined;
   }
 
   async deleteVideo(id: number): Promise<boolean> {
     try {
       // 관련된 사용자 진도 데이터 먼저 삭제 (Foreign Key 제약조건)
-      await db.delete(userProgress).where(eq(userProgress.videoId, id));
+      await sql`DELETE FROM user_progress WHERE video_id = ${id}`;
       console.log(`비디오 ${id}의 진도 데이터 삭제 완료`);
       
       // 관련된 사용자 노트 데이터 먼저 삭제 (Foreign Key 제약조건)
-      await db.delete(userNotes).where(eq(userNotes.videoId, id));
+      await sql`DELETE FROM user_notes WHERE video_id = ${id}`;
       console.log(`비디오 ${id}의 노트 데이터 삭제 완료`);
       
       // 마지막으로 비디오 삭제
-      const result = await db.delete(videos).where(eq(videos.id, id));
+      const result = await sql`DELETE FROM videos WHERE id = ${id}`;
       console.log(`비디오 ${id} 삭제 완료`);
       
       return true;
@@ -299,22 +294,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAllVideos(): Promise<void> {
-    await db.delete(videos).execute();
+    await sql`DELETE FROM videos`;
   }
 
   // User Progress
   async getUserProgress(userId: number): Promise<UserProgress[]> {
-    return await db
-      .select()
-      .from(userProgress)
-      .where(eq(userProgress.userId, userId));
+    return await sql`SELECT * FROM user_progress WHERE user_id = ${userId}`;
   }
 
   async getVideoProgress(userId: number, videoId: number): Promise<UserProgress | undefined> {
-    const [progress] = await db
-      .select()
-      .from(userProgress)
-      .where(and(eq(userProgress.userId, userId), eq(userProgress.videoId, videoId)));
+    const [progress] = await sql`SELECT * FROM user_progress WHERE user_id = ${userId} AND video_id = ${videoId}`;
     return progress || undefined;
   }
 
@@ -322,70 +311,64 @@ export class DatabaseStorage implements IStorage {
     const existing = await this.getVideoProgress(userId, videoId);
 
     if (existing) {
-      const [updated] = await db
-        .update(userProgress)
-        .set({ ...progress, lastWatchedAt: new Date() })
-        .where(and(eq(userProgress.userId, userId), eq(userProgress.videoId, videoId)))
-        .returning();
+      const [updated] = await sql`
+        UPDATE user_progress SET ${sql(Object.keys(progress).map(k => `${k} = ${sql(progress[k])}`))}
+        WHERE user_id = ${userId} AND video_id = ${videoId}
+        RETURNING *
+      `;
       return updated;
     } else {
-      const [created] = await db
-        .insert(userProgress)
-        .values({ userId, videoId, ...progress })
-        .returning();
+      const [created] = await sql`
+        INSERT INTO user_progress (user_id, video_id, ${sql.identifier(Object.keys(progress))})
+        VALUES (${userId}, ${videoId}, ${sql(Object.values(progress))})
+        RETURNING *
+      `;
       return created;
     }
   }
 
   // User Notes
   async getUserNotes(userId: number, videoId: number): Promise<UserNote[]> {
-    return await db
-      .select()
-      .from(userNotes)
-      .where(and(eq(userNotes.userId, userId), eq(userNotes.videoId, videoId)))
-      .orderBy(desc(userNotes.createdAt));
+    return await sql`SELECT * FROM user_notes WHERE user_id = ${userId} AND video_id = ${videoId} ORDER BY created_at DESC`;
   }
 
   async getAllUserNotes(userId: number): Promise<UserNote[]> {
-    return await db
-      .select()
-      .from(userNotes)
-      .where(eq(userNotes.userId, userId))
-      .orderBy(desc(userNotes.createdAt));
+    return await sql`SELECT * FROM user_notes WHERE user_id = ${userId} ORDER BY created_at DESC`;
   }
 
   async createNote(userId: number, videoId: number, content: string): Promise<UserNote> {
-    const [newNote] = await db
-      .insert(userNotes)
-      .values({ userId, videoId, content })
-      .returning();
+    const [newNote] = await sql`
+      INSERT INTO user_notes (user_id, video_id, content)
+      VALUES (${userId}, ${videoId}, ${content})
+      RETURNING *
+    `;
     return newNote;
   }
 
   async updateNote(id: number, content: string): Promise<UserNote | undefined> {
-    const [note] = await db
-      .update(userNotes)
-      .set({ content, updatedAt: new Date() })
-      .where(eq(userNotes.id, id))
-      .returning();
+    const [note] = await sql`
+      UPDATE user_notes SET content = ${content}, updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `;
     return note || undefined;
   }
 
   async deleteNote(id: number): Promise<boolean> {
-    await db.delete(userNotes).where(eq(userNotes.id, id));
+    await sql`DELETE FROM user_notes WHERE id = ${id}`;
     return true;
   }
 
   async deleteAllUserCourses(): Promise<void> {
-    await db.delete(userCourses).execute();
+    await sql`DELETE FROM user_courses`;
   }
 
   async deleteAllUserProgress(): Promise<void> {
-    await db.delete(userProgress).execute();
+    await sql`DELETE FROM user_progress`;
   }
 
   async deleteAllUserNotes(): Promise<void> {
-    await db.delete(userNotes).execute();
+    await sql`DELETE FROM user_notes`;
   }
 
   async createVideoWithPgDriver(video: InsertVideo): Promise<any> {
