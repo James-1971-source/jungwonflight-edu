@@ -63,6 +63,16 @@ export interface IStorage {
   deleteAllUserNotes(): Promise<void>;
 }
 
+// 클래스 바깥에 선언
+function toSnakeCase(obj: Record<string, any>) {
+  return Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => [
+      k.replace(/([A-Z])/g, "_$1").toLowerCase(),
+      v
+    ])
+  );
+}
+
 export class DatabaseStorage implements IStorage {
   // Users
   async getUser(id: number): Promise<User | undefined> {
@@ -203,7 +213,7 @@ export class DatabaseStorage implements IStorage {
     return video || undefined;
   }
 
-  function toSnakeCase(obj: Record<string, any>) {
+  private toSnakeCase(obj: Record<string, any>) {
     return Object.fromEntries(
       Object.entries(obj).map(([k, v]) => [
         k.replace(/([A-Z])/g, "_$1").toLowerCase(),
