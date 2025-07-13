@@ -234,8 +234,25 @@ export class DatabaseStorage implements IStorage {
     );
     cleanVideo = toSnakeCase(cleanVideo);
 
-    const columns = Object.keys(cleanVideo); // 반드시 id가 없어야 함
-    const values = Object.values(cleanVideo);
+    // 컬럼명과 값 순서를 명확히 지정
+    const columns = [
+      "title",
+      "description",
+      "google_drive_file_id",
+      "thumbnail_url",
+      "duration",
+      "category_id",
+      "uploaded_by"
+    ];
+    const values = [
+      cleanVideo.title,
+      cleanVideo.description,
+      cleanVideo.google_drive_file_id,
+      cleanVideo.thumbnail_url,
+      cleanVideo.duration,
+      cleanVideo.category_id,
+      cleanVideo.uploaded_by
+    ];
 
     const sqlQuery = sql`
       INSERT INTO videos (${sql.raw(columns.join(', '))})
@@ -243,8 +260,8 @@ export class DatabaseStorage implements IStorage {
       RETURNING *
     `;
 
-    console.log('직접 SQL 쿼리:', sqlQuery);
-    console.log('SQL 값들:', values);
+    console.log('최종 직접 SQL 쿼리:', sqlQuery);
+    console.log('최종 SQL 값들:', values);
 
     const result = await db.execute(sqlQuery);
     return result[0] as Video;
