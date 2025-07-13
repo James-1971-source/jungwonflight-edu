@@ -234,11 +234,15 @@ export class DatabaseStorage implements IStorage {
     );
     cleanVideo = toSnakeCase(cleanVideo);
 
-    // 쿼리 로그 출력
-    console.log('=== DRIZZLE INSERT QUERY DEBUG ===');
-    console.log('Clean video data:', cleanVideo);
+    const columns = Object.keys(cleanVideo);
+    const values = Object.values(cleanVideo);
 
-    // 1. drizzle-orm insert 우선 시도
+    // ★★★ 아래 로그를 추가하세요 ★★★
+    console.log('최종 insert columns:', columns);
+    console.log('최종 insert values:', values);
+    console.log('최종 cleanVideo:', cleanVideo);
+
+    // drizzle-orm insert
     try {
       const result = await db.insert(videos).values(cleanVideo).returning();
       return result[0];
