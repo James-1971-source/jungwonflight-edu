@@ -339,15 +339,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 새로운 파일 업로드 라우트
   app.post("/api/videos/upload", requireAdmin, upload.single('video'), async (req, res) => {
     try {
+      console.log("업로드 요청 받음:", {
+        file: req.file ? "파일 있음" : "파일 없음",
+        body: req.body,
+        user: req.user
+      });
+
       if (!req.file) {
+        console.log("파일이 없음");
         return res.status(400).json({ message: "비디오 파일이 필요합니다." });
       }
 
       const { title, description, categoryId } = req.body;
       
       if (!title) {
+        console.log("제목이 없음");
         return res.status(400).json({ message: "제목이 필요합니다." });
       }
+
+      console.log("파일 정보:", {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      });
 
       // 비디오 파일 처리
       const processedVideo = await VideoService.processVideo(req.file);

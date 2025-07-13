@@ -211,9 +211,39 @@ export class DatabaseStorage implements IStorage {
     // undefined, id 필드 모두 제거 (2중 필터링)
     const cleanVideo = Object.fromEntries(
       Object.entries(video).filter(([k, v]) => k !== "id" && v !== undefined)
-    );
-    const result = await db.insert(videos).values(cleanVideo).returning();
-    return result[0];
+    ) as InsertVideo;
+    
+    // 쿼리 로그 출력
+    const insertQuery = db.insert(videos).values(cleanVideo).returning();
+    console.log('=== DRIZZLE INSERT QUERY DEBUG ===');
+    console.log('Clean video data:', cleanVideo);
+    console.log('Generated SQL:', insertQuery.toSQL());
+    console.log('===================================');
+    
+    try {
+      // 먼저 drizzle-orm으로 시도
+      const result = await insertQuery;
+      return result[0];
+    } catch (error) {
+      console.log('Drizzle ORM insert 실패, 직접 SQL로 시도:', error);
+      
+      // drizzle-orm이 실패하면 직접 SQL 사용
+      const columns = Object.keys(cleanVideo);
+      const values = Object.values(cleanVideo);
+      const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
+      
+      const sql = `
+        INSERT INTO videos (${columns.join(', ')})
+        VALUES (${placeholders})
+        RETURNING *
+      `;
+      
+      console.log('직접 SQL 쿼리:', sql);
+      console.log('SQL 값들:', values);
+      
+      const result = await db.execute(sql);
+      return result[0] as Video;
+    }
   }
 
   async updateVideo(id: number, updates: Partial<InsertVideo>): Promise<Video | undefined> {
@@ -237,9 +267,9 @@ export class DatabaseStorage implements IStorage {
       
       // 마지막으로 비디오 삭제
       const result = await db.delete(videos).where(eq(videos.id, id));
-      console.log(`비디오 ${id} 삭제 완료, 영향받은 행: ${result.changes}`);
+      console.log(`비디오 ${id} 삭제 완료`);
       
-      return result.changes > 0;
+      return true;
     } catch (error) {
       console.error('동영상 삭제 중 데이터베이스 오류:', error);
       throw error;
@@ -320,8 +350,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteNote(id: number): Promise<boolean> {
-    const result = await db.delete(userNotes).where(eq(userNotes.id, id));
-    return result.changes > 0;
+    await db.delete(userNotes).where(eq(userNotes.id, id));
+    return true;
   }
 
   async deleteAllUserCourses(): Promise<void> {
