@@ -754,14 +754,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await sql`SELECT 1 as test`;
       console.log(`[HEALTH] DB 연결 성공:`, result);
       
-      // 사용자 수 확인
-      const users = await sql`SELECT COUNT(*) as count FROM users`;
-      console.log(`[HEALTH] 사용자 수:`, users[0].count);
-      
       res.json({ 
         status: "healthy", 
         database: "connected",
-        userCount: users[0].count,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
