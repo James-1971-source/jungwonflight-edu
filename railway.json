@@ -3,6 +3,9 @@
   "build": {
     "builder": "NIXPACKS"
   },
+  "variables": {
+    "NODE_VERSION": "18"
+  },
   "deploy": {
     "startCommand": "npm start",
     "releaseCommand": "npm run db:push",
