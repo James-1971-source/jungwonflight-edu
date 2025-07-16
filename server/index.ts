@@ -76,11 +76,19 @@ app.use((req, res, next) => {
 
   // Use environment variable PORT or default to 5002
   const port = process.env.PORT ? parseInt(process.env.PORT) : 5002;
+  console.log(`[SERVER] 서버 시작 중... 포트: ${port}`);
+  console.log(`[SERVER] 환경변수:`, {
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
+    DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '설정되지 않음'
+  });
+  
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    console.log(`[SERVER] 서버가 포트 ${port}에서 시작되었습니다.`);
   });
 })();
