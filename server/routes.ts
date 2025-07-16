@@ -104,7 +104,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isApproved: user.isApproved
         });
 
-        if (!user.isApproved) {
+        // isApproved가 undefined인 경우 임시로 true로 설정
+        const isApproved = user.isApproved !== undefined ? user.isApproved : true;
+        
+        if (!isApproved) {
           console.log(`[LOGIN] 승인되지 않은 계정: ${username}`);
           return done(null, false, { message: '승인되지 않은 계정입니다.' });
         }
@@ -121,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username: user.username,
           email: user.email,
           role: user.role,
-          isApproved: user.isApproved
+          isApproved: isApproved
         });
       } catch (error) {
         console.error(`[LOGIN] 로그인 중 오류 발생:`, error);
@@ -137,14 +140,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
-      if (user && user.isApproved) {
-        done(null, {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          isApproved: user.isApproved
-        });
+      if (user) {
+        // isApproved가 undefined인 경우 임시로 true로 설정
+        const isApproved = user.isApproved !== undefined ? user.isApproved : true;
+        
+        if (isApproved) {
+          done(null, {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            isApproved: isApproved
+          });
+        } else {
+          done(null, false);
+        }
       } else {
         done(null, false);
       }
