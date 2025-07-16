@@ -114,8 +114,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined> {
+    console.log(`[STORAGE] updateUser 호출:`, { id, updates });
+    
+    // isApproved 필드를 is_approved로 변환
+    const processedUpdates = { ...updates };
+    if ('isApproved' in processedUpdates) {
+      (processedUpdates as any).is_approved = processedUpdates.isApproved;
+      delete processedUpdates.isApproved;
+    }
+    
+    console.log(`[STORAGE] 처리된 업데이트 데이터:`, processedUpdates);
+    
     const [user] = await sql`
-      UPDATE users SET ${sql(Object.keys(updates).map(k => `${k} = ${sql(updates[k])}`))}
+      UPDATE users SET ${sql(Object.keys(processedUpdates).map(k => `${k} = ${sql((processedUpdates as any)[k])}`))}
       WHERE id = ${id}
       RETURNING *
     `;

@@ -276,11 +276,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const updates = req.body;
       
+      console.log(`[USER UPDATE] 사용자 수정 요청:`, { id, updates });
+      
       // Check if user exists
       const existingUser = await storage.getUser(parseInt(id));
       if (!existingUser) {
+        console.log(`[USER UPDATE] 사용자를 찾을 수 없음: ${id}`);
         return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
       }
+
+      console.log(`[USER UPDATE] 기존 사용자 정보:`, existingUser);
 
       // Check username uniqueness if username is being updated
       if (updates.username && updates.username !== existingUser.username) {
@@ -298,16 +303,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // isApproved 필드 처리
+      if (updates.isApproved !== undefined) {
+        // boolean 값으로 변환
+        updates.isApproved = Boolean(updates.isApproved);
+        console.log(`[USER UPDATE] isApproved 값 설정:`, updates.isApproved);
+      }
+
+      console.log(`[USER UPDATE] 최종 업데이트 데이터:`, updates);
+
       // Update user
       const updatedUser = await storage.updateUser(parseInt(id), updates);
       if (!updatedUser) {
+        console.log(`[USER UPDATE] 사용자 업데이트 실패: ${id}`);
         return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
       }
+
+      console.log(`[USER UPDATE] 사용자 업데이트 성공:`, updatedUser);
 
       // Remove password from response
       const { password, ...userResponse } = updatedUser;
       res.json(userResponse);
     } catch (error) {
+      console.error(`[USER UPDATE] 오류 발생:`, error);
       res.status(400).json({ message: "사용자 정보 수정 중 오류가 발생했습니다." });
     }
   });

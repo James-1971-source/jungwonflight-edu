@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { runMigrations } from "./migrate";
 
 const app = express();
 
@@ -46,6 +47,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // 마이그레이션 실행
+  try {
+    await runMigrations();
+    log("마이그레이션 완료");
+  } catch (error) {
+    log(`마이그레이션 오류: ${error}`);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
