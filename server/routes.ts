@@ -12,6 +12,7 @@ import path from "path";
 import { VideoService } from "./videoService";
 import { fileURLToPath } from 'url';
 import connectPgSimple from 'connect-pg-simple';
+import { sql } from "drizzle-orm";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -67,25 +68,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     { usernameField: 'username' },
     async (username, password, done) => {
       try {
+        console.log(`[LOGIN] 로그인 시도: ${username}`);
+        
+        // 데이터베이스 연결 상태 확인
+        try {
+          const testQuery = await sql`SELECT 1`;
+          console.log(`[LOGIN] DB 연결 확인: 성공`);
+        } catch (dbError) {
+          console.error(`[LOGIN] DB 연결 오류:`, dbError);
+          return done(new Error('데이터베이스 연결 오류'));
+        }
+        
         // Try to find user by username first, then by email
         let user = await storage.getUserByUsername(username);
         if (!user) {
+          console.log(`[LOGIN] 사용자명으로 사용자 찾기 실패: ${username}`);
           user = await storage.getUserByEmail(username);
+          if (user) {
+            console.log(`[LOGIN] 이메일로 사용자 찾기 성공: ${username}`);
+          }
+        } else {
+          console.log(`[LOGIN] 사용자명으로 사용자 찾기 성공: ${username}`);
         }
         
         if (!user) {
+          console.log(`[LOGIN] 사용자를 찾을 수 없음: ${username}`);
           return done(null, false, { message: '잘못된 사용자명 또는 이메일입니다.' });
         }
 
+        console.log(`[LOGIN] 사용자 정보:`, {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          isApproved: user.isApproved
+        });
+
         if (!user.isApproved) {
+          console.log(`[LOGIN] 승인되지 않은 계정: ${username}`);
           return done(null, false, { message: '승인되지 않은 계정입니다.' });
         }
 
         const isValid = await bcrypt.compare(password, user.password);
         if (!isValid) {
+          console.log(`[LOGIN] 비밀번호 불일치: ${username}`);
           return done(null, false, { message: '잘못된 비밀번호입니다.' });
         }
 
+        console.log(`[LOGIN] 로그인 성공: ${username}`);
         return done(null, {
           id: user.id,
           username: user.username,
@@ -94,6 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isApproved: user.isApproved
         });
       } catch (error) {
+        console.error(`[LOGIN] 로그인 중 오류 발생:`, error);
         return done(error);
       }
     }
@@ -138,8 +169,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Auth routes
-  app.post("/api/login", passport.authenticate('local'), (req, res) => {
-    res.json(req.user);
+  app.post("/api/login", (req, res, next) => {
+    console.log(`[LOGIN] 로그인 요청 받음:`, {
+      username: req.body.username,
+      hasPassword: !!req.body.password,
+      body: req.body,
+      headers: req.headers
+    });
+    
+    passport.authenticate('local', (err, user, info) => {
+      if (err) {
+        console.error(`[LOGIN] 인증 오류:`, err);
+        return res.status(500).json({ message: "로그인 중 오류가 발생했습니다." });
+      }
+      
+      if (!user) {
+        console.log(`[LOGIN] 인증 실패:`, info?.message);
+        return res.status(401).json({ message: info?.message || "로그인에 실패했습니다." });
+      }
+      
+      req.logIn(user, (err) => {
+        if (err) {
+          console.error(`[LOGIN] 세션 생성 오류:`, err);
+          return res.status(500).json({ message: "로그인 중 오류가 발생했습니다." });
+        }
+        
+        console.log(`[LOGIN] 로그인 완료:`, { id: user.id, username: user.username });
+        res.json(user);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res) => {
@@ -676,6 +734,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "강의가 삭제되었습니다." });
     } catch (error) {
       res.status(500).json({ message: "강의 삭제 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Health check endpoint
+  app.get("/api/health", async (req, res) => {
+    try {
+      // 데이터베이스 연결 테스트
+      const result = await sql`SELECT 1 as test`;
+      console.log(`[HEALTH] DB 연결 성공:`, result);
+      
+      // 사용자 수 확인
+      const users = await sql`SELECT COUNT(*) as count FROM users`;
+      console.log(`[HEALTH] 사용자 수:`, users[0].count);
+      
+      res.json({ 
+        status: "healthy", 
+        database: "connected",
+        userCount: users[0].count,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error(`[HEALTH] 오류:`, error);
+      res.status(500).json({ 
+        status: "unhealthy", 
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
