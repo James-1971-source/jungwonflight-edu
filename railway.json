@@ -9,7 +9,7 @@
   "deploy": {
     "startCommand": "npm start",
     "releaseCommand": "npm run build:all",
-    "healthcheckPath": "/api/health",
+    "healthcheckPath": "/",
     "healthcheckTimeout": 600,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 15

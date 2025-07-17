@@ -29,6 +29,15 @@ declare global {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // 루트 경로 - 헬스체크용
+  app.get("/", (req, res) => {
+    res.json({ 
+      status: "healthy", 
+      message: "JungwonFlight-Edu API Server",
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // 정적 파일 서빙 (업로드된 파일들)
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -769,13 +778,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
   app.get("/api/health", async (req, res) => {
     try {
-      // 데이터베이스 연결 테스트
-      const result = await sql`SELECT 1 as test`;
-      console.log(`[HEALTH] DB 연결 성공:`, result);
-      
+      // 간단한 응답으로 시작
       res.json({ 
         status: "healthy", 
-        database: "connected",
         timestamp: new Date().toISOString()
       });
     } catch (error) {
