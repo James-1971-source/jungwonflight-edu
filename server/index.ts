@@ -99,6 +99,9 @@ app.use((req, res, next) => {
     }, () => {
       log(`serving on port ${port}`);
       console.log(`[SERVER] 서버가 포트 ${port}에서 시작되었습니다.`);
+      
+      // 헬스체크 준비 완료 알림
+      console.log(`[SERVER] 헬스체크 엔드포인트 준비: http://localhost:${port}/api/health`);
     });
 
     // Graceful shutdown

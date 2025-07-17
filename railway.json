@@ -10,8 +10,8 @@
     "startCommand": "npm start",
     "releaseCommand": "npm run build:all",
     "healthcheckPath": "/api/health",
-    "healthcheckTimeout": 300,
+    "healthcheckTimeout": 600,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+    "restartPolicyMaxRetries": 15
   }
 } 
