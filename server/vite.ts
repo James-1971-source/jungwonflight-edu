@@ -70,20 +70,23 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const distPath = path.resolve(__dirname, "public");
+  const distPath = path.resolve(__dirname, "..", "dist");
 
   console.log(`[DEBUG] Looking for static files in: ${distPath}`);
   console.log(`[DEBUG] Directory exists: ${fs.existsSync(distPath)}`);
   
   if (fs.existsSync(distPath)) {
     const files = fs.readdirSync(distPath);
-    console.log(`[DEBUG] Files in dist/public:`, files);
+    console.log(`[DEBUG] Files in dist:`, files);
   }
 
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+    console.error(`[ERROR] Could not find the build directory: ${distPath}`);
+    // 프로덕션에서는 빌드 디렉토리가 없어도 서버는 계속 실행
+    app.use("*", (_req, res) => {
+      res.status(404).json({ message: "정적 파일을 찾을 수 없습니다. 클라이언트를 빌드해주세요." });
+    });
+    return;
   }
 
   app.use(express.static(distPath));

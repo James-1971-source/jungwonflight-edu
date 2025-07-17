@@ -187,7 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       headers: req.headers
     });
     
-    passport.authenticate('local', (err, user, info) => {
+    passport.authenticate('local', (err: any, user: any, info: any) => {
       if (err) {
         console.error(`[LOGIN] 인증 오류:`, err);
         return res.status(500).json({ message: "로그인 중 오류가 발생했습니다." });
@@ -581,10 +581,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/notes", requireAuth, async (req, res) => {
     try {
       const noteData = insertUserNoteSchema.parse(req.body);
-      const note = await storage.createNote({
-        ...noteData,
-        userId: req.user!.id
-      });
+      const note = await storage.createNote(
+        req.user!.id,
+        noteData.videoId,
+        noteData.content
+      );
       res.status(201).json(note);
     } catch (error) {
       const errMsg = (error as Error)?.message || String(error);
@@ -714,7 +715,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ 
         message: "API 키 유효성 검사 중 오류가 발생했습니다.",
-        error: error.message 
+        error: (error as Error)?.message || String(error)
       });
     }
   });
@@ -781,7 +782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error(`[HEALTH] 오류:`, error);
       res.status(500).json({ 
         status: "unhealthy", 
-        error: error.message,
+        error: (error as Error)?.message || String(error),
         timestamp: new Date().toISOString()
       });
     }

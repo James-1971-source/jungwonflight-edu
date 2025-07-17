@@ -56,44 +56,60 @@ app.use((req, res, next) => {
       log("마이그레이션 완료");
     } catch (error) {
       log(`마이그레이션 오류: ${error}`);
+      // 마이그레이션 실패해도 서버는 계속 실행
     }
 
     const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
-  });
+      res.status(status).json({ message });
+      console.error("[SERVER] 에러 미들웨어:", err);
+    });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+    // importantly only setup vite in development and after
+    // setting up all the other routes so the catch-all route
+    // doesn't interfere with the other routes
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      try {
+        serveStatic(app);
+      } catch (staticError) {
+        console.error("[SERVER] 정적 파일 서빙 설정 오류:", staticError);
+        // 정적 파일 서빙 실패해도 API는 계속 동작
+      }
+    }
 
-  // Use environment variable PORT or default to 5002
-  const port = process.env.PORT ? parseInt(process.env.PORT) : 5002;
-  console.log(`[SERVER] 서버 시작 중... 포트: ${port}`);
-  console.log(`[SERVER] 환경변수:`, {
-    NODE_ENV: process.env.NODE_ENV,
-    PORT: process.env.PORT,
-    DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '설정되지 않음'
-  });
-  
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-    console.log(`[SERVER] 서버가 포트 ${port}에서 시작되었습니다.`);
-  });
+    // Use environment variable PORT or default to 5002
+    const port = process.env.PORT ? parseInt(process.env.PORT) : 5002;
+    console.log(`[SERVER] 서버 시작 중... 포트: ${port}`);
+    console.log(`[SERVER] 환경변수:`, {
+      NODE_ENV: process.env.NODE_ENV,
+      PORT: process.env.PORT,
+      DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '설정되지 않음'
+    });
+    
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`serving on port ${port}`);
+      console.log(`[SERVER] 서버가 포트 ${port}에서 시작되었습니다.`);
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('[SERVER] SIGTERM 신호 수신, 서버 종료 중...');
+      server.close(() => {
+        console.log('[SERVER] 서버가 정상적으로 종료되었습니다.');
+        process.exit(0);
+      });
+    });
+
   } catch (error) {
     console.error("[SERVER] 서버 초기화 오류:", error);
     process.exit(1);
