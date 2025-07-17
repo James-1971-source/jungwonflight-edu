@@ -47,15 +47,18 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // 마이그레이션 실행
   try {
-    await runMigrations();
-    log("마이그레이션 완료");
-  } catch (error) {
-    log(`마이그레이션 오류: ${error}`);
-  }
+    console.log("[SERVER] 서버 초기화 시작...");
+    
+    // 마이그레이션 실행
+    try {
+      await runMigrations();
+      log("마이그레이션 완료");
+    } catch (error) {
+      log(`마이그레이션 오류: ${error}`);
+    }
 
-  const server = await registerRoutes(app);
+    const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -91,4 +94,8 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
     console.log(`[SERVER] 서버가 포트 ${port}에서 시작되었습니다.`);
   });
+  } catch (error) {
+    console.error("[SERVER] 서버 초기화 오류:", error);
+    process.exit(1);
+  }
 })();

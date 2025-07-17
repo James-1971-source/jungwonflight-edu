@@ -8,4 +8,4 @@ cmds = ["npm ci"]
 cmds = ["npm run build", "npm run build:server"]
 
 [start]
-cmd = "npm run start:check" 
+cmd = "npm start" 
