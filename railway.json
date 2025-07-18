@@ -4,14 +4,14 @@
     "builder": "NIXPACKS"
   },
   "variables": {
-    "NODE_VERSION": "18"
+    "NODE_VERSION": "20"
   },
   "deploy": {
     "startCommand": "npm start",
     "releaseCommand": "npm run build:all",
     "healthcheckPath": "/",
-    "healthcheckTimeout": 600,
+    "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 15
+    "restartPolicyMaxRetries": 10
   }
 } 

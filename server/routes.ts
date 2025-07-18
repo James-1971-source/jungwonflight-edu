@@ -29,11 +29,22 @@ declare global {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // 루트 경로 - 헬스체크용
+  // 루트 경로 - 헬스체크용 (Railway에서 사용)
   app.get("/", (req, res) => {
-    res.json({ 
+    res.status(200).json({ 
       status: "healthy", 
       message: "JungwonFlight-Edu API Server",
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      port: process.env.PORT || 5000
+    });
+  });
+
+  // 추가 헬스체크 엔드포인트
+  app.get("/health", (req, res) => {
+    res.status(200).json({ 
+      status: "healthy", 
+      uptime: process.uptime(),
       timestamp: new Date().toISOString()
     });
   });
@@ -57,14 +68,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   });
 
-  // Session configuration (using memory store for now)
+  // Session configuration 
   app.use(session({
     secret: process.env.SESSION_SECRET || "avilearn-secret-key",
     resave: false,
     saveUninitialized: false,
     cookie: { 
-      secure: true, // Railway는 https 환경이므로 true
-      sameSite: 'none', // 크로스도메인 허용
+      secure: process.env.NODE_ENV === 'production', // 환경에 따라 동적 설정
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 환경에 따라 동적 설정
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30일
     }
   }));

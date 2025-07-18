@@ -2,13 +2,13 @@ export async function runMigrations() {
   try {
     console.log("마이그레이션 시작...");
     
-    // Drizzle schema가 이미 생성되어 있으므로 추가 마이그레이션은 필요 없음
-    console.log("스키마가 이미 최신 상태입니다.");
-    
+    // Railway 환경에서는 Drizzle Kit으로 스키마 생성
+    // 개발 환경에서는 이미 생성되어 있음
     console.log("마이그레이션 완료!");
   } catch (error) {
     console.error("마이그레이션 오류:", error);
-    throw error;
+    // Railway에서는 마이그레이션 실패로 인한 서버 중단 방지
+    console.log("마이그레이션 오류 발생했지만 서버는 계속 실행됩니다.");
   }
 }
 
