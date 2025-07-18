@@ -1,17 +1,9 @@
-import { sql } from "./db";
-
 export async function runMigrations() {
   try {
     console.log("마이그레이션 시작...");
     
-    // is_approved 컬럼 추가
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_approved BOOLEAN NOT NULL DEFAULT false`;
-    console.log("is_approved 컬럼 추가 완료");
-    
-    // 기존 사용자들을 승인된 상태로 설정
-    await sql`UPDATE users SET is_approved = true WHERE role = 'admin'`;
-    await sql`UPDATE users SET is_approved = true WHERE role = 'student'`;
-    console.log("기존 사용자 승인 상태 업데이트 완료");
+    // Drizzle schema가 이미 생성되어 있으므로 추가 마이그레이션은 필요 없음
+    console.log("스키마가 이미 최신 상태입니다.");
     
     console.log("마이그레이션 완료!");
   } catch (error) {

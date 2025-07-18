@@ -9,7 +9,7 @@ const app = express();
 app.set('trust proxy', 1); // Railway, Heroku 등 프록시 환경에서 secure 쿠키 동작 보장
 
 app.use(cors({
-  origin: "https://jungwonflight-edu-production.up.railway.app", // 실제 Railway 프론트엔드 도메인
+  origin: process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "http://localhost:5000", // Replit 환경에 맞는 도메인
   credentials: true // 쿠키 허용
 }));
 
@@ -83,8 +83,8 @@ app.use((req, res, next) => {
       console.error("[SERVER] 에러 미들웨어:", err);
     });
 
-    // Use environment variable PORT or default to 5002
-    const port = process.env.PORT ? parseInt(process.env.PORT) : 5002;
+    // Use environment variable PORT or default to 5000 (Replit standard)
+    const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
     console.log(`[SERVER] 서버 시작 중... 포트: ${port}`);
     console.log(`[SERVER] 환경변수:`, {
       NODE_ENV: process.env.NODE_ENV,
@@ -102,6 +102,9 @@ app.use((req, res, next) => {
       
       // 헬스체크 준비 완료 알림
       console.log(`[SERVER] 헬스체크 엔드포인트 준비: http://localhost:${port}/api/health`);
+      
+      // 포트 확인 로그
+      console.log(`[SERVER] 포트 ${port}에서 대기 중 (Replit 표준 포트: 5000)`);
     });
 
     // Graceful shutdown
