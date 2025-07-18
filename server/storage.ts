@@ -6,9 +6,19 @@ import {
   type UserProgress, type InsertUserProgress,
   type UserNote, type InsertUserNote
 } from "@shared/schema";
-import { sql } from "./db";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { eq, and, desc } from "drizzle-orm";
-import { sql as pgSql } from './db'; // 위에서 만든 sql 인스턴스 import
+
+// Drizzle ORM 설정
+const connectionString = process.env.DATABASE_URL!;
+const client = postgres(connectionString, {
+  ssl: 'require',
+  max: 1,
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
+const db = drizzle(client);
 
 export interface IStorage {
   // Users
@@ -77,18 +87,18 @@ function toSnakeCase(obj: Record<string, any>) {
 export class DatabaseStorage implements IStorage {
   // Users
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await sql`SELECT * FROM users WHERE id = ${id}`;
-    return user || undefined;
+    const result = await db.select().from(users).where(eq(users.id, id));
+    return result[0] || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await sql`SELECT * FROM users WHERE username = ${username}`;
-    return user || undefined;
+    const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0] || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await sql`SELECT * FROM users WHERE email = ${email}`;
-    return user || undefined;
+    const result = await db.select().from(users).where(eq(users.email, email));
+    return result[0] || undefined;
   }
 
   async getUserByRole(role: string): Promise<User | undefined> {
