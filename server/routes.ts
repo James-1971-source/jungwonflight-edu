@@ -29,15 +29,6 @@ declare global {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // 루트 경로 - 헬스체크용
-  app.get("/", (req, res) => {
-    res.json({ 
-      status: "healthy", 
-      message: "JungwonFlight-Edu API Server",
-      timestamp: new Date().toISOString()
-    });
-  });
-
   // 정적 파일 서빙 (업로드된 파일들)
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
