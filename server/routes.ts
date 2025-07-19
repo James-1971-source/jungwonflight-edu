@@ -68,8 +68,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   });
 
-  // Session configuration 
+  // Session configuration with PostgreSQL store for production
+  const PgSession = connectPgSimple(session);
+  
   app.use(session({
+    store: new PgSession({
+      conObject: {
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      },
+      tableName: 'sessions', // 테이블 이름
+    }),
     secret: process.env.SESSION_SECRET || "avilearn-secret-key",
     resave: false,
     saveUninitialized: false,
