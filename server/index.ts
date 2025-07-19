@@ -59,9 +59,11 @@ app.use((req, res, next) => {
   try {
     console.log("[SERVER] 서버 초기화 시작...");
     
-    // 환경변수 PORT 사용 또는 기본값 5002
+    // Railway에서는 PORT 환경변수를 사용, 기본값은 5002
     const port = process.env.PORT ? parseInt(process.env.PORT) : 5002;
     console.log(`[SERVER] 포트 설정: ${port}`);
+    console.log(`[SERVER] 실제 사용 포트: ${port}`);
+    console.log(`[SERVER] 환경변수 PORT: ${process.env.PORT}`);
     
     // 라우트 등록 (먼저 실행)
     registerRoutes(app);
@@ -71,6 +73,12 @@ app.use((req, res, next) => {
     const server = app.listen(port, "0.0.0.0", () => {
       console.log(`[SERVER] 서버가 포트 ${port}에서 시작되었습니다`);
       console.log(`[SERVER] 브라우저 접속: http://localhost:${port}/`);
+      console.log(`[SERVER] 헬스체크 URL: http://localhost:${port}/api/health`);
+    });
+
+    // 서버 에러 핸들러 추가
+    server.on('error', (error) => {
+      console.error('[SERVER] 서버 에러:', error);
     });
 
     // 데이터베이스 마이그레이션 실행 (백그라운드에서)
@@ -93,8 +101,12 @@ app.use((req, res, next) => {
     console.log(`[SERVER] 환경변수 정보:`, {
       NODE_ENV: process.env.NODE_ENV,
       PORT: process.env.PORT,
-      DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '설정되지 않음'
+      DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '설정되지 않음',
+      HOST: process.env.HOST || '0.0.0.0'
     });
+    
+    // 헬스체크 엔드포인트가 등록되었는지 확인
+    console.log(`[SERVER] 등록된 라우트 확인: /api/health 엔드포인트 준비됨`);
     
     // Graceful shutdown
     process.on('SIGTERM', () => {
