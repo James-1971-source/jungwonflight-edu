@@ -64,7 +64,7 @@ app.use((req, res, next) => {
     console.log(`[SERVER] 포트 설정: ${port}`);
     
     // 라우트 등록 (먼저 실행)
-    await registerRoutes(app);
+    registerRoutes(app);
     console.log("[SERVER] 라우트 등록 완료");
 
     // HTTP 서버를 시작

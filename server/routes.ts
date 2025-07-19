@@ -28,7 +28,7 @@ declare global {
   }
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express): Promise<void> {
   // 루트 경로 - 헬스체크용 (Railway에서 사용)
   app.get("/", (req, res) => {
     res.status(200).json({ 
@@ -823,7 +823,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
-  const httpServer = createServer(app);
-  return httpServer;
 }
