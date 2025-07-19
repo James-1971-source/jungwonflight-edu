@@ -29,7 +29,6 @@ declare global {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-<<<<<<< HEAD
   // 루트 경로 - 헬스체크용 (Railway에서 사용)
   app.get("/", (req, res) => {
     res.status(200).json({ 
@@ -50,8 +49,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-=======
->>>>>>> 7b585d305a42398eb4e56a83bd038b48f9aa3602
   // 정적 파일 서빙 (업로드된 파일들)
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

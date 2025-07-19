@@ -92,7 +92,6 @@ app.use((req, res, next) => {
       console.error("[SERVER] 에러 미들웨어:", err);
     });
 
-<<<<<<< HEAD
     // Use environment variable PORT or default to 5000 (Replit standard)
     const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
     console.log(`[SERVER] 서버 시작 중... 포트: ${port}`);
@@ -117,8 +116,6 @@ app.use((req, res, next) => {
       console.log(`[SERVER] 포트 ${port}에서 대기 중 (Replit 표준 포트: 5000)`);
     });
 
-=======
->>>>>>> 7b585d305a42398eb4e56a83bd038b48f9aa3602
     // Graceful shutdown
     process.on('SIGTERM', () => {
       console.log('[SERVER] SIGTERM 신호 수신, 서버 종료 중...');
