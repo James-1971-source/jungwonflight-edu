@@ -16,6 +16,15 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// 즉시 응답하는 루트 경로 (헬스체크용)
+app.get("/", (req, res) => {
+  res.json({ 
+    status: "healthy", 
+    message: "JungwonFlight-Edu API Server",
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -50,31 +59,31 @@ app.use((req, res, next) => {
   try {
     console.log("[SERVER] 서버 초기화 시작...");
     
-    // 마이그레이션 실행
-    try {
-      await runMigrations();
-      log("마이그레이션 완료");
-    } catch (error) {
-      log(`마이그레이션 오류: ${error}`);
-      // 마이그레이션 실패해도 서버는 계속 실행
-    }
+    // Use environment variable PORT or default to 5002
+    const port = process.env.PORT ? parseInt(process.env.PORT) : 5002;
+    console.log(`[SERVER] 포트 설정: ${port}`);
+    
+    // 먼저 서버를 시작
+    const server = app.listen(port, "0.0.0.0", () => {
+      console.log(`[SERVER] 서버가 포트 ${port}에서 시작되었습니다.`);
+      console.log(`[SERVER] 헬스체크 준비: http://localhost:${port}/`);
+    });
 
-    const server = await registerRoutes(app);
+    // 마이그레이션 실행 (백그라운드에서)
+    runMigrations().then(() => {
+      console.log("[SERVER] 마이그레이션 완료");
+    }).catch((error) => {
+      console.error("[SERVER] 마이그레이션 오류:", error);
+    });
 
-    // importantly only setup vite in development and after
-    // setting up all the other routes so the catch-all route
-    // doesn't interfere with the other routes
-    if (app.get("env") === "development") {
-      await setupVite(app, server);
-    } else {
-      try {
-        serveStatic(app);
-      } catch (staticError) {
-        console.error("[SERVER] 정적 파일 서빙 설정 오류:", staticError);
-        // 정적 파일 서빙 실패해도 API는 계속 동작
-      }
-    }
+    // 라우트 설정 (백그라운드에서)
+    registerRoutes(app).then(() => {
+      console.log("[SERVER] 라우트 설정 완료");
+    }).catch((error) => {
+      console.error("[SERVER] 라우트 설정 오류:", error);
+    });
 
+    // 에러 핸들러
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
@@ -83,6 +92,7 @@ app.use((req, res, next) => {
       console.error("[SERVER] 에러 미들웨어:", err);
     });
 
+<<<<<<< HEAD
     // Use environment variable PORT or default to 5000 (Replit standard)
     const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
     console.log(`[SERVER] 서버 시작 중... 포트: ${port}`);
@@ -107,6 +117,8 @@ app.use((req, res, next) => {
       console.log(`[SERVER] 포트 ${port}에서 대기 중 (Replit 표준 포트: 5000)`);
     });
 
+=======
+>>>>>>> 7b585d305a42398eb4e56a83bd038b48f9aa3602
     // Graceful shutdown
     process.on('SIGTERM', () => {
       console.log('[SERVER] SIGTERM 신호 수신, 서버 종료 중...');
