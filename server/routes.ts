@@ -29,6 +29,12 @@ declare global {
 }
 
 export async function registerRoutes(app: Express): Promise<void> {
+  // 모든 요청 로깅 미들웨어
+  app.use((req, res, next) => {
+    console.log(`[REQUEST] ${req.method} ${req.path} - ${new Date().toISOString()}`);
+    next();
+  });
+
   // 루트 경로 - 헬스체크용 (Railway에서 사용)
   app.get("/", (req, res) => {
     res.status(200).json({ 
@@ -51,13 +57,19 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Railway 헬스체크용 엔드포인트
   app.get("/api/health", (req, res) => {
+    console.log(`[HEALTH] 헬스체크 요청 받음: ${req.method} ${req.path}`);
+    console.log(`[HEALTH] 요청 헤더:`, req.headers);
+    
     res.status(200).json({ 
       status: "healthy", 
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
-      port: process.env.PORT || 5000
+      port: process.env.PORT || 5000,
+      message: "서버가 정상적으로 작동 중입니다"
     });
+    
+    console.log(`[HEALTH] 헬스체크 응답 전송 완료`);
   });
 
   // 정적 파일 서빙 (업로드된 파일들)
