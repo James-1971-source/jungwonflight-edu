@@ -16,22 +16,32 @@ export async function runMigrations() {
     
     // 세션 테이블 생성 (connect-pg-simple용)
     try {
-      await client`
-        CREATE TABLE IF NOT EXISTS sessions (
-          sid VARCHAR NOT NULL COLLATE "default",
-          sess JSON NOT NULL,
-          expire TIMESTAMP(6) NOT NULL
-        )
-        WITH (OIDS=FALSE);
+      // 먼저 테이블이 존재하는지 확인
+      const tableExists = await client`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'sessions'
+        );
       `;
       
-      await client`
-        ALTER TABLE sessions ADD CONSTRAINT sessions_pkey PRIMARY KEY (sid) NOT DEFERRABLE INITIALLY IMMEDIATE;
-      `;
-      
-      console.log("세션 테이블 생성 완료");
+      if (!tableExists[0].exists) {
+        // 테이블이 존재하지 않으면 생성
+        await client`
+          CREATE TABLE sessions (
+            sid VARCHAR NOT NULL COLLATE "default",
+            sess JSON NOT NULL,
+            expire TIMESTAMP(6) NOT NULL,
+            CONSTRAINT sessions_pkey PRIMARY KEY (sid)
+          );
+        `;
+        console.log("세션 테이블 생성 완료");
+      } else {
+        console.log("세션 테이블이 이미 존재합니다");
+      }
     } catch (sessionError) {
-      console.log("세션 테이블이 이미 존재하거나 생성 중 오류:", sessionError);
+      console.log("세션 테이블 처리 중 오류:", sessionError);
+      // 오류가 발생해도 서버는 계속 실행
     }
     
     // Railway 환경에서는 Drizzle Kit으로 스키마 생성
