@@ -63,24 +63,21 @@ app.use((req, res, next) => {
     const port = process.env.PORT ? parseInt(process.env.PORT) : 5002;
     console.log(`[SERVER] 포트 설정: ${port}`);
     
+    // 라우트 등록 (먼저 실행)
+    await registerRoutes(app);
+    console.log("[SERVER] 라우트 등록 완료");
+
     // HTTP 서버를 시작
     const server = app.listen(port, "0.0.0.0", () => {
       console.log(`[SERVER] 서버가 포트 ${port}에서 시작되었습니다`);
       console.log(`[SERVER] 브라우저 접속: http://localhost:${port}/`);
     });
 
-    // 데이터베이스 마이그레이션 실행 (비동기적으로)
+    // 데이터베이스 마이그레이션 실행 (백그라운드에서)
     runMigrations().then(() => {
       console.log("[SERVER] 데이터베이스 마이그레이션 완료");
     }).catch((error) => {
       console.error("[SERVER] 데이터베이스 마이그레이션 오류:", error);
-    });
-
-    // 라우트 등록 (비동기적으로)
-    registerRoutes(app).then(() => {
-      console.log("[SERVER] 라우트 등록 완료");
-    }).catch((error) => {
-      console.error("[SERVER] 라우트 등록 오류:", error);
     });
 
     // 에러 핸들러

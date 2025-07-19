@@ -49,6 +49,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Railway 헬스체크용 엔드포인트
+  app.get("/api/health", (req, res) => {
+    res.status(200).json({ 
+      status: "healthy", 
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      port: process.env.PORT || 5000
+    });
+  });
+
   // 정적 파일 서빙 (업로드된 파일들)
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
