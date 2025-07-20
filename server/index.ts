@@ -112,20 +112,30 @@ app.use((req, res, next) => {
       console.log(`[SERVER] 헬스체크 타임아웃: 300초`);
       console.log(`[SERVER] 서버 프로세스 ID: ${process.pid}`);
       
-          // 서버가 계속 실행 중임을 주기적으로 로그
-    setInterval(() => {
-      console.log(`[SERVER] 서버 실행 중... (${new Date().toISOString()})`);
-    }, 30000); // 30초마다
+      // 서버가 계속 실행 중임을 주기적으로 로그
+      setInterval(() => {
+        console.log(`[SERVER] 서버 실행 중... (${new Date().toISOString()})`);
+      }, 30000); // 30초마다
 
-    // 프로세스가 종료되지 않도록 keep-alive
-    process.stdin.resume();
-    
-    console.log(`[SERVER] 서버가 포그라운드에서 실행 중입니다. 종료하려면 Ctrl+C를 누르세요.`);
-    
-    // 서버가 계속 실행되도록 무한 루프 (Railway 환경에서 필요)
-    setInterval(() => {
-      // 아무것도 하지 않지만 프로세스가 종료되지 않도록 함
-    }, 1000);
+      // 프로세스가 종료되지 않도록 keep-alive
+      process.stdin.resume();
+      
+      console.log(`[SERVER] 서버가 포그라운드에서 실행 중입니다. 종료하려면 Ctrl+C를 누르세요.`);
+      
+      // 서버가 계속 실행되도록 무한 루프 (Railway 환경에서 필요)
+      setInterval(() => {
+        // 아무것도 하지 않지만 프로세스가 종료되지 않도록 함
+      }, 1000);
+
+      // 추가적인 프로세스 유지 메커니즘
+      const keepAlive = setInterval(() => {
+        console.log(`[SERVER] Keep-alive 체크... (${new Date().toISOString()})`);
+      }, 60000); // 1분마다
+
+      // 서버 종료 시 keep-alive도 정리
+      server.on('close', () => {
+        clearInterval(keepAlive);
+      });
     });
 
     // 서버 에러 핸들러 추가
@@ -191,6 +201,12 @@ app.use((req, res, next) => {
     process.on('unhandledRejection', (reason, promise) => {
       console.error('[SERVER] 처리되지 않은 Promise 거부:', reason);
       // 서버를 종료하지 않고 계속 실행
+    });
+
+    // 강제로 프로세스가 종료되지 않도록 추가 보호
+    process.on('beforeExit', (code) => {
+      console.log(`[SERVER] beforeExit 이벤트 발생, 코드: ${code}`);
+      // 프로세스가 종료되지 않도록 방지
     });
 
   } catch (error) {
