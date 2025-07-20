@@ -35,19 +35,20 @@ export async function registerRoutes(app: Express): Promise<void> {
     next();
   });
 
-  // 루트 경로 - 헬스체크용 (Railway에서 사용)
-  app.get("/", (req, res) => {
-    res.status(200).json({ 
-      status: "healthy", 
-      message: "JungwonFlight-Edu API Server",
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV,
-      port: process.env.PORT || 5000
-    });
-  });
+  // 루트 경로 - 헬스체크용 (Railway에서 사용) - 주석 처리하여 중복 방지
+  // app.get("/", (req, res) => {
+  //   res.status(200).json({ 
+  //     status: "healthy", 
+  //     message: "JungwonFlight-Edu API Server",
+  //     timestamp: new Date().toISOString(),
+  //     environment: process.env.NODE_ENV,
+  //     port: process.env.PORT || 5000
+  //   });
+  // });
 
   // 추가 헬스체크 엔드포인트
   app.get("/health", (req, res) => {
+    console.log(`[HEALTH] /health 엔드포인트 요청 받음: ${req.method} ${req.path}`);
     res.status(200).json({ 
       status: "healthy", 
       uptime: process.uptime(),

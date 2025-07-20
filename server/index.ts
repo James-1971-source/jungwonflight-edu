@@ -18,11 +18,20 @@ app.use(express.urlencoded({ extended: false }));
 
 // 헬스체크 응답을 위한 기본 경로 (브라우저 접속용)
 app.get("/", (req, res) => {
-  res.json({ 
+  console.log(`[ROOT] 루트 경로 요청 받음: ${req.method} ${req.path}`);
+  console.log(`[ROOT] 요청 헤더:`, req.headers);
+  
+  const response = { 
     status: "healthy", 
     message: "JungwonFlight-Edu API Server",
-    timestamp: new Date().toISOString()
-  });
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV,
+    port: process.env.PORT || 5000
+  };
+  
+  console.log(`[ROOT] 응답 전송:`, response);
+  res.json(response);
 });
 
 app.use((req, res, next) => {
@@ -66,7 +75,7 @@ app.use((req, res, next) => {
     console.log(`[SERVER] 환경변수 PORT: ${process.env.PORT}`);
     
     // 라우트 등록 (먼저 실행)
-    registerRoutes(app);
+    await registerRoutes(app);
     console.log("[SERVER] 라우트 등록 완료");
 
     // HTTP 서버를 시작
@@ -76,6 +85,8 @@ app.use((req, res, next) => {
       console.log(`[SERVER] 헬스체크 URL: http://localhost:${port}/api/health`);
       console.log(`[SERVER] 루트 헬스체크 URL: http://localhost:${port}/`);
       console.log(`[SERVER] 서버가 헬스체크 요청을 받을 준비가 되었습니다!`);
+      console.log(`[SERVER] Railway 헬스체크 경로: /`);
+      console.log(`[SERVER] 서버 상태: 정상 작동 중`);
     });
 
     // 서버 에러 핸들러 추가
