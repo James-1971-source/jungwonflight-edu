@@ -51,6 +51,11 @@ app.get("/railway-health", (req, res) => {
   res.status(200).json(response);
 });
 
+// 간단한 텍스트 응답도 추가
+app.get("/ping", (req, res) => {
+  res.status(200).send("pong");
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -104,8 +109,13 @@ app.use((req, res, next) => {
       console.log(`[SERVER] 서버가 헬스체크 요청을 받을 준비가 되었습니다!`);
       console.log(`[SERVER] Railway 헬스체크 경로: /`);
       console.log(`[SERVER] 서버 상태: 정상 작동 중`);
-      console.log(`[SERVER] 헬스체크 타임아웃: 600초`);
+      console.log(`[SERVER] 헬스체크 타임아웃: 300초`);
       console.log(`[SERVER] 서버 프로세스 ID: ${process.pid}`);
+      
+      // 서버가 계속 실행 중임을 주기적으로 로그
+      setInterval(() => {
+        console.log(`[SERVER] 서버 실행 중... (${new Date().toISOString()})`);
+      }, 30000); // 30초마다
     });
 
     // 서버 에러 핸들러 추가
@@ -160,6 +170,17 @@ app.use((req, res, next) => {
     // 프로세스 종료 시 로그
     process.on('exit', (code) => {
       console.log(`[SERVER] 프로세스 종료, 코드: ${code}`);
+    });
+
+    // 예기치 않은 종료 방지
+    process.on('uncaughtException', (error) => {
+      console.error('[SERVER] 예기치 않은 오류:', error);
+      // 서버를 종료하지 않고 계속 실행
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('[SERVER] 처리되지 않은 Promise 거부:', reason);
+      // 서버를 종료하지 않고 계속 실행
     });
 
   } catch (error) {
