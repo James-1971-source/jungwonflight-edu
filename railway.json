@@ -8,7 +8,7 @@
   },
   "deploy": {
     "startCommand": "npm start",
-    "releaseCommand": "npm run build:all",
+    "releaseCommand": "npm run db:push && npm run db:seed",
     "healthcheckPath": "/",
     "healthcheckTimeout": 600,
     "restartPolicyType": "ON_FAILURE",
