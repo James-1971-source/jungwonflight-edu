@@ -74,6 +74,8 @@ app.use((req, res, next) => {
       console.log(`[SERVER] 서버가 포트 ${port}에서 시작되었습니다`);
       console.log(`[SERVER] 브라우저 접속: http://localhost:${port}/`);
       console.log(`[SERVER] 헬스체크 URL: http://localhost:${port}/api/health`);
+      console.log(`[SERVER] 루트 헬스체크 URL: http://localhost:${port}/`);
+      console.log(`[SERVER] 서버가 헬스체크 요청을 받을 준비가 되었습니다!`);
     });
 
     // 서버 에러 핸들러 추가
