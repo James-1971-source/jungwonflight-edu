@@ -86,7 +86,8 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
+// 서버 시작 함수
+async function startServer() {
   try {
     console.log("[SERVER] 서버 초기화 시작...");
     
@@ -214,4 +215,18 @@ app.use((req, res, next) => {
     console.error("[SERVER] 서버 초기화 오류:", error);
     process.exit(1);
   }
-})(); 
+}
+
+// 서버 시작
+startServer().then(() => {
+  console.log("[SERVER] 서버 시작 함수 완료, 프로세스 유지 중...");
+  
+  // 무한 루프로 프로세스 유지
+  setInterval(() => {
+    console.log(`[SERVER] 프로세스 유지 중... (${new Date().toISOString()})`);
+  }, 30000); // 30초마다
+  
+}).catch((error) => {
+  console.error("[SERVER] 서버 시작 실패:", error);
+  process.exit(1);
+}); 
