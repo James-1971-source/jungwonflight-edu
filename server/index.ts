@@ -100,6 +100,17 @@ app.use((req, res, next) => {
     await registerRoutes(app);
     console.log("[SERVER] 라우트 등록 완료");
 
+    // 환경변수 정보 출력
+    console.log(`[SERVER] 환경변수 정보:`, {
+      NODE_ENV: process.env.NODE_ENV,
+      PORT: process.env.PORT,
+      DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '설정되지 않음',
+      HOST: process.env.HOST || '0.0.0.0'
+    });
+    
+    // 헬스체크 엔드포인트가 등록되었는지 확인
+    console.log(`[SERVER] 등록된 라우트 확인: /api/health 엔드포인트 준비됨`);
+
     // HTTP 서버를 시작
     const server = app.listen(port, "0.0.0.0", () => {
       console.log(`[SERVER] 서버가 포트 ${port}에서 시작되었습니다`);
@@ -111,6 +122,7 @@ app.use((req, res, next) => {
       console.log(`[SERVER] 서버 상태: 정상 작동 중`);
       console.log(`[SERVER] 헬스체크 타임아웃: 300초`);
       console.log(`[SERVER] 서버 프로세스 ID: ${process.pid}`);
+      console.log(`[SERVER] 서버 시작 완료! 헬스체크 준비됨`);
       
       // 서버가 계속 실행 중임을 주기적으로 로그
       setInterval(() => {
@@ -158,17 +170,6 @@ app.use((req, res, next) => {
       res.status(status).json({ message });
       console.error("[SERVER] 에러 발생:", err);
     });
-
-    // 환경변수 정보 출력
-    console.log(`[SERVER] 환경변수 정보:`, {
-      NODE_ENV: process.env.NODE_ENV,
-      PORT: process.env.PORT,
-      DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '설정되지 않음',
-      HOST: process.env.HOST || '0.0.0.0'
-    });
-    
-    // 헬스체크 엔드포인트가 등록되었는지 확인
-    console.log(`[SERVER] 등록된 라우트 확인: /api/health 엔드포인트 준비됨`);
     
     // Graceful shutdown
     process.on('SIGTERM', () => {
