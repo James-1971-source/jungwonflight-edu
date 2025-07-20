@@ -112,10 +112,20 @@ app.use((req, res, next) => {
       console.log(`[SERVER] 헬스체크 타임아웃: 300초`);
       console.log(`[SERVER] 서버 프로세스 ID: ${process.pid}`);
       
-      // 서버가 계속 실행 중임을 주기적으로 로그
-      setInterval(() => {
-        console.log(`[SERVER] 서버 실행 중... (${new Date().toISOString()})`);
-      }, 30000); // 30초마다
+          // 서버가 계속 실행 중임을 주기적으로 로그
+    setInterval(() => {
+      console.log(`[SERVER] 서버 실행 중... (${new Date().toISOString()})`);
+    }, 30000); // 30초마다
+
+    // 프로세스가 종료되지 않도록 keep-alive
+    process.stdin.resume();
+    
+    console.log(`[SERVER] 서버가 포그라운드에서 실행 중입니다. 종료하려면 Ctrl+C를 누르세요.`);
+    
+    // 서버가 계속 실행되도록 무한 루프 (Railway 환경에서 필요)
+    setInterval(() => {
+      // 아무것도 하지 않지만 프로세스가 종료되지 않도록 함
+    }, 1000);
     });
 
     // 서버 에러 핸들러 추가
