@@ -9,8 +9,8 @@
   "deploy": {
     "startCommand": "npm start",
     "releaseCommand": "npm run build:all",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 300,
+    "healthcheckPath": "/railway-health",
+    "healthcheckTimeout": 600,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

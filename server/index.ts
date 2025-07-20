@@ -27,11 +27,28 @@ app.get("/", (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV,
-    port: process.env.PORT || 5000
+    port: process.env.PORT || 5000,
+    pid: process.pid
   };
   
   console.log(`[ROOT] 응답 전송:`, response);
-  res.json(response);
+  res.status(200).json(response);
+});
+
+// Railway 전용 헬스체크 엔드포인트
+app.get("/railway-health", (req, res) => {
+  console.log(`[RAILWAY] Railway 헬스체크 요청 받음: ${req.method} ${req.path}`);
+  
+  const response = { 
+    status: "healthy", 
+    message: "Railway Health Check",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    pid: process.pid
+  };
+  
+  console.log(`[RAILWAY] 응답 전송:`, response);
+  res.status(200).json(response);
 });
 
 app.use((req, res, next) => {
@@ -87,6 +104,8 @@ app.use((req, res, next) => {
       console.log(`[SERVER] 서버가 헬스체크 요청을 받을 준비가 되었습니다!`);
       console.log(`[SERVER] Railway 헬스체크 경로: /`);
       console.log(`[SERVER] 서버 상태: 정상 작동 중`);
+      console.log(`[SERVER] 헬스체크 타임아웃: 600초`);
+      console.log(`[SERVER] 서버 프로세스 ID: ${process.pid}`);
     });
 
     // 서버 에러 핸들러 추가
@@ -128,6 +147,19 @@ app.use((req, res, next) => {
         console.log('[SERVER] 서버가 안전하게 종료되었습니다');
         process.exit(0);
       });
+    });
+
+    process.on('SIGINT', () => {
+      console.log('[SERVER] SIGINT 신호 수신, 서버 종료 중...');
+      server.close(() => {
+        console.log('[SERVER] 서버가 안전하게 종료되었습니다');
+        process.exit(0);
+      });
+    });
+
+    // 프로세스 종료 시 로그
+    process.on('exit', (code) => {
+      console.log(`[SERVER] 프로세스 종료, 코드: ${code}`);
     });
 
   } catch (error) {
