@@ -56,6 +56,20 @@ app.get("/ping", (req, res) => {
   res.status(200).send("pong");
 });
 
+// 즉시 응답 가능한 최소한의 헬스체크
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
+// 모든 경로에 대한 기본 응답 (Railway 헬스체크용)
+app.get("*", (req, res) => {
+  if (req.path === "/") {
+    res.status(200).json({ status: "healthy", message: "Server is running" });
+  } else {
+    res.status(404).json({ error: "Not found" });
+  }
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -121,7 +135,7 @@ async function startServer() {
       console.log(`[SERVER] 서버가 헬스체크 요청을 받을 준비가 되었습니다!`);
       console.log(`[SERVER] Railway 헬스체크 경로: /`);
       console.log(`[SERVER] 서버 상태: 정상 작동 중`);
-      console.log(`[SERVER] 헬스체크 타임아웃: 300초`);
+      console.log(`[SERVER] 헬스체크 타임아웃: 600초`);
       console.log(`[SERVER] 서버 프로세스 ID: ${process.pid}`);
       console.log(`[SERVER] 서버 시작 완료! 헬스체크 준비됨`);
       
@@ -211,6 +225,14 @@ async function startServer() {
       // 프로세스가 종료되지 않도록 방지
     });
 
+    // 서버 시작 완료 후 무한 루프로 프로세스 유지
+    console.log("[SERVER] 서버 시작 함수 완료, 프로세스 유지 중...");
+    
+    // 무한 루프로 프로세스 유지
+    setInterval(() => {
+      console.log(`[SERVER] 프로세스 유지 중... (${new Date().toISOString()})`);
+    }, 30000); // 30초마다
+
   } catch (error) {
     console.error("[SERVER] 서버 초기화 오류:", error);
     process.exit(1);
@@ -218,15 +240,4 @@ async function startServer() {
 }
 
 // 서버 시작
-startServer().then(() => {
-  console.log("[SERVER] 서버 시작 함수 완료, 프로세스 유지 중...");
-  
-  // 무한 루프로 프로세스 유지
-  setInterval(() => {
-    console.log(`[SERVER] 프로세스 유지 중... (${new Date().toISOString()})`);
-  }, 30000); // 30초마다
-  
-}).catch((error) => {
-  console.error("[SERVER] 서버 시작 실패:", error);
-  process.exit(1);
-}); 
+startServer(); 
