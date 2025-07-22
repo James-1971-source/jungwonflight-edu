@@ -1,10 +1,20 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./migrate";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+
+// ✅ Railway 포트 환경변수 사용 (가장 중요!)
+const PORT = process.env.PORT || 8080;
+
+console.log('[SERVER] 서버 초기화 시작...');
 
 app.set('trust proxy', 1); // Railway, Heroku 등의 프록시 환경에서 secure 쿠키 설정
 
@@ -13,21 +23,21 @@ app.use(cors({
   credentials: true // 쿠키 사용
 }));
 
+// 미들웨어 설정
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 
-// 헬스체크 응답을 위한 기본 경로 (브라우저 접속용)
-app.get("/", (req, res) => {
+// ✅ 헬스체크 엔드포인트 (Railway 필수)
+app.get('/', (req, res) => {
   console.log(`[ROOT] 루트 경로 요청 받음: ${req.method} ${req.path}`);
-  console.log(`[ROOT] 요청 헤더:`, req.headers);
   
   const response = { 
-    status: "healthy", 
-    message: "JungwonFlight-Edu API Server",
+    status: 'OK', 
+    message: 'JungwonFlight-Edu Server is running',
+    port: PORT,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV,
-    port: process.env.PORT || 5000,
     pid: process.pid
   };
   
@@ -61,15 +71,6 @@ app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
 
-// 모든 경로에 대한 기본 응답 (Railway 헬스체크용)
-app.get("*", (req, res) => {
-  if (req.path === "/") {
-    res.status(200).json({ status: "healthy", message: "Server is running" });
-  } else {
-    res.status(404).json({ error: "Not found" });
-  }
-});
-
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -100,15 +101,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// 서버 시작 함수
+// ✅ 핵심 수정: 서버 시작 함수
 async function startServer() {
   try {
-    console.log("[SERVER] 서버 초기화 시작...");
-    
-    // Railway에서는 PORT 환경변수를 사용, 기본값은 5002
-    const port = process.env.PORT ? parseInt(process.env.PORT) : 5002;
-    console.log(`[SERVER] 포트 설정: ${port}`);
-    console.log(`[SERVER] 실제 사용 포트: ${port}`);
+    console.log(`[SERVER] 포트 설정: ${PORT}`);
+    console.log(`[SERVER] 실제 사용 포트: ${PORT}`);
     console.log(`[SERVER] 환경변수 PORT: ${process.env.PORT}`);
     
     // 라우트 등록 (먼저 실행)
@@ -126,55 +123,32 @@ async function startServer() {
     // 헬스체크 엔드포인트가 등록되었는지 확인
     console.log(`[SERVER] 등록된 라우트 확인: /api/health 엔드포인트 준비됨`);
 
-    // HTTP 서버를 시작
-    const server = app.listen(port, "0.0.0.0", () => {
-      console.log(`[SERVER] 서버가 포트 ${port}에서 시작되었습니다`);
-      console.log(`[SERVER] 브라우저 접속: http://localhost:${port}/`);
-      console.log(`[SERVER] 헬스체크 URL: http://localhost:${port}/api/health`);
-      console.log(`[SERVER] 루트 헬스체크 URL: http://localhost:${port}/`);
+    // 데이터베이스 마이그레이션 (실패해도 서버는 시작)
+    try {
+      await runMigrations();
+      console.log('[SERVER] 데이터베이스 마이그레이션 완료');
+    } catch (error) {
+      console.error('[SERVER] 마이그레이션 실패:', error);
+      // 계속 진행
+    }
+
+    // ✅ 가장 중요한 부분: Express 서버 시작
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`[SERVER] 서버가 포트 ${PORT}에서 실행 중입니다 ✅`);
+      console.log(`[SERVER] 브라우저 접속: http://localhost:${PORT}/`);
+      console.log(`[SERVER] 헬스체크 URL: http://localhost:${PORT}/api/health`);
+      console.log(`[SERVER] 루트 헬스체크 URL: http://localhost:${PORT}/`);
       console.log(`[SERVER] 서버가 헬스체크 요청을 받을 준비가 되었습니다!`);
       console.log(`[SERVER] Railway 헬스체크 경로: /`);
       console.log(`[SERVER] 서버 상태: 정상 작동 중`);
       console.log(`[SERVER] 헬스체크 타임아웃: 600초`);
       console.log(`[SERVER] 서버 프로세스 ID: ${process.pid}`);
-      console.log(`[SERVER] 서버 시작 완료! 헬스체크 준비됨`);
-      
-      // 서버가 계속 실행 중임을 주기적으로 로그
-      setInterval(() => {
-        console.log(`[SERVER] 서버 실행 중... (${new Date().toISOString()})`);
-      }, 30000); // 30초마다
-
-      // 프로세스가 종료되지 않도록 keep-alive
-      process.stdin.resume();
-      
-      console.log(`[SERVER] 서버가 포그라운드에서 실행 중입니다. 종료하려면 Ctrl+C를 누르세요.`);
-      
-      // 서버가 계속 실행되도록 무한 루프 (Railway 환경에서 필요)
-      setInterval(() => {
-        // 아무것도 하지 않지만 프로세스가 종료되지 않도록 함
-      }, 1000);
-
-      // 추가적인 프로세스 유지 메커니즘
-      const keepAlive = setInterval(() => {
-        console.log(`[SERVER] Keep-alive 체크... (${new Date().toISOString()})`);
-      }, 60000); // 1분마다
-
-      // 서버 종료 시 keep-alive도 정리
-      server.on('close', () => {
-        clearInterval(keepAlive);
-      });
+      console.log('[SERVER] Railway 헬스체크 준비 완료');
     });
 
-    // 서버 에러 핸들러 추가
+    // 서버 에러 핸들링
     server.on('error', (error) => {
       console.error('[SERVER] 서버 에러:', error);
-    });
-
-    // 데이터베이스 마이그레이션 실행 (백그라운드에서)
-    runMigrations().then(() => {
-      console.log("[SERVER] 데이터베이스 마이그레이션 완료");
-    }).catch((error) => {
-      console.error("[SERVER] 데이터베이스 마이그레이션 오류:", error);
     });
 
     // 에러 핸들러
@@ -185,12 +159,12 @@ async function startServer() {
       res.status(status).json({ message });
       console.error("[SERVER] 에러 발생:", err);
     });
-    
-    // Graceful shutdown
+
+    // 프로세스 종료 시 정리
     process.on('SIGTERM', () => {
-      console.log('[SERVER] SIGTERM 신호 수신, 서버 종료 중...');
+      console.log('[SERVER] SIGTERM 수신, 서버를 종료합니다');
       server.close(() => {
-        console.log('[SERVER] 서버가 안전하게 종료되었습니다');
+        console.log('[SERVER] 서버 종료 완료');
         process.exit(0);
       });
     });
@@ -219,25 +193,19 @@ async function startServer() {
       // 서버를 종료하지 않고 계속 실행
     });
 
-    // 강제로 프로세스가 종료되지 않도록 추가 보호
-    process.on('beforeExit', (code) => {
-      console.log(`[SERVER] beforeExit 이벤트 발생, 코드: ${code}`);
-      // 프로세스가 종료되지 않도록 방지
-    });
-
-    // 서버 시작 완료 후 무한 루프로 프로세스 유지
-    console.log("[SERVER] 서버 시작 함수 완료, 프로세스 유지 중...");
+    // ✅ 이 부분이 핵심: app.listen() 호출 후 함수는 종료되지만
+    // Express 서버가 이벤트 루프를 유지하므로 프로세스가 계속 실행됨
     
-    // 무한 루프로 프로세스 유지
-    setInterval(() => {
-      console.log(`[SERVER] 프로세스 유지 중... (${new Date().toISOString()})`);
-    }, 30000); // 30초마다
-
   } catch (error) {
-    console.error("[SERVER] 서버 초기화 오류:", error);
+    console.error('[SERVER] 서버 시작 실패:', error);
     process.exit(1);
   }
 }
 
-// 서버 시작
-startServer(); 
+// ✅ 메인 실행부 - 이 부분도 중요
+startServer().catch((error) => {
+  console.error('[SERVER] 치명적 오류:', error);
+  process.exit(1);
+});
+
+export { app }; 
