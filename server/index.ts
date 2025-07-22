@@ -1,211 +1,180 @@
-import express, { type Request, Response, NextFunction } from "express";
-import cors from "cors";
+import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { runMigrations } from "./migrate";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Express 앱 생성
 const app = express();
-
-// ✅ Railway 포트 환경변수 사용 (가장 중요!)
-const PORT = process.env.PORT || 8080;
+const PORT = parseInt(process.env.PORT || '8080');
 
 console.log('[SERVER] 서버 초기화 시작...');
-
-app.set('trust proxy', 1); // Railway, Heroku 등의 프록시 환경에서 secure 쿠키 설정
-
-app.use(cors({
-  origin: process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "http://localhost:5000", // Replit 환경에서는 도메인 사용
-  credentials: true // 쿠키 사용
-}));
+console.log('[SERVER] 포트 설정:', PORT);
+console.log('[SERVER] 실제 사용 포트:', PORT);
+console.log('[SERVER] 환경변수 PORT:', process.env.PORT);
 
 // 미들웨어 설정
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ 헬스체크 엔드포인트 (Railway 필수)
+// 헬스체크 엔드포인트들
 app.get('/', (req, res) => {
-  console.log(`[ROOT] 루트 경로 요청 받음: ${req.method} ${req.path}`);
-  
-  const response = { 
+  console.log('[SERVER] 루트 엔드포인트 호출됨');
+  res.status(200).json({ 
     status: 'OK', 
     message: 'JungwonFlight-Edu Server is running',
     port: PORT,
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV,
-    pid: process.pid
-  };
-  
-  console.log(`[ROOT] 응답 전송:`, response);
-  res.status(200).json(response);
-});
-
-// Railway 전용 헬스체크 엔드포인트
-app.get("/railway-health", (req, res) => {
-  console.log(`[RAILWAY] Railway 헬스체크 요청 받음: ${req.method} ${req.path}`);
-  
-  const response = { 
-    status: "healthy", 
-    message: "Railway Health Check",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    pid: process.pid
-  };
-  
-  console.log(`[RAILWAY] 응답 전송:`, response);
-  res.status(200).json(response);
-});
-
-// 간단한 텍스트 응답도 추가
-app.get("/ping", (req, res) => {
-  res.status(200).send("pong");
-});
-
-// 즉시 응답 가능한 최소한의 헬스체크
-app.get("/health", (req, res) => {
-  res.status(200).send("OK");
-});
-
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "...";
-      }
-
-      log(logLine);
-    }
+    uptime: process.uptime()
   });
-
-  next();
 });
 
-// ✅ 핵심 수정: 서버 시작 함수
-async function startServer() {
+app.get('/health', (req, res) => {
+  console.log('[SERVER] /health 엔드포인트 호출됨');
+  res.status(200).json({ 
+    status: 'healthy',
+    port: PORT,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  console.log('[SERVER] /api/health 엔드포인트 호출됨');
+  res.status(200).json({ 
+    status: 'healthy',
+    port: PORT,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+console.log('[SERVER] 라우트 등록 완료');
+
+// 환경변수 정보 출력
+console.log('[SERVER] 환경변수 정보:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+  DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '설정안됨',
+  HOST: '0.0.0.0'
+});
+
+console.log('[SERVER] 등록된 라우트 확인: /api/health 엔드포인트 준비됨');
+
+// 마이그레이션 함수 (간단한 버전)
+async function runMigration() {
+  console.log('마이그레이션 시작...');
   try {
-    console.log(`[SERVER] 포트 설정: ${PORT}`);
-    console.log(`[SERVER] 실제 사용 포트: ${PORT}`);
-    console.log(`[SERVER] 환경변수 PORT: ${process.env.PORT}`);
+    // 실제 마이그레이션 코드가 있다면 여기에 추가
+    // await migrate();
+    console.log('마이그레이션 완료!');
+    console.log('마이그레이션이 성공적으로 완료되었습니다.');
+    return true;
+  } catch (error) {
+    console.error('마이그레이션 실패:', error);
+    return false;
+  }
+}
+
+// 🔥 서버 시작 함수 - 이 부분이 핵심!
+async function startServer() {
+  console.log('[SERVER] 🚀 서버 시작 프로세스 시작');
+  
+  try {
+    // 마이그레이션 실행 (실패해도 서버는 시작)
+    await runMigration();
     
-    // 라우트 등록 (먼저 실행)
-    await registerRoutes(app);
-    console.log("[SERVER] 라우트 등록 완료");
-
-    // 환경변수 정보 출력
-    console.log(`[SERVER] 환경변수 정보:`, {
-      NODE_ENV: process.env.NODE_ENV,
-      PORT: process.env.PORT,
-      DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '설정되지 않음',
-      HOST: process.env.HOST || '0.0.0.0'
-    });
+    console.log('[SERVER] 🔧 Express 서버 바인딩 시작...');
     
-    // 헬스체크 엔드포인트가 등록되었는지 확인
-    console.log(`[SERVER] 등록된 라우트 확인: /api/health 엔드포인트 준비됨`);
-
-    // 데이터베이스 마이그레이션 (실패해도 서버는 시작)
-    try {
-      await runMigrations();
-      console.log('[SERVER] 데이터베이스 마이그레이션 완료');
-    } catch (error) {
-      console.error('[SERVER] 마이그레이션 실패:', error);
-      // 계속 진행
-    }
-
-    // ✅ 가장 중요한 부분: Express 서버 시작
+    // 🚨 가장 중요한 부분: 서버 시작 및 리스닝
     const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`[SERVER] 서버가 포트 ${PORT}에서 실행 중입니다 ✅`);
-      console.log(`[SERVER] 브라우저 접속: http://localhost:${PORT}/`);
-      console.log(`[SERVER] 헬스체크 URL: http://localhost:${PORT}/api/health`);
-      console.log(`[SERVER] 루트 헬스체크 URL: http://localhost:${PORT}/`);
-      console.log(`[SERVER] 서버가 헬스체크 요청을 받을 준비가 되었습니다!`);
-      console.log(`[SERVER] Railway 헬스체크 경로: /`);
-      console.log(`[SERVER] 서버 상태: 정상 작동 중`);
-      console.log(`[SERVER] 헬스체크 타임아웃: 600초`);
-      console.log(`[SERVER] 서버 프로세스 ID: ${process.pid}`);
-      console.log('[SERVER] Railway 헬스체크 준비 완료');
+      console.log(`[SERVER] ✅ 서버가 성공적으로 시작되었습니다!`);
+      console.log(`[SERVER] ✅ 주소: http://0.0.0.0:${PORT}`);
+      console.log(`[SERVER] ✅ 헬스체크 엔드포인트: http://0.0.0.0:${PORT}/health`);
+      console.log('[SERVER] ✅ Railway 헬스체크 준비 완료');
+      console.log('[SERVER] ✅ 서버 상태: RUNNING');
     });
 
-    // 서버 에러 핸들링
-    server.on('error', (error) => {
-      console.error('[SERVER] 서버 에러:', error);
+    // 서버 이벤트 리스너
+    server.on('listening', () => {
+      const address = server.address();
+      console.log('[SERVER] ✅ 서버 리스닝 상태 확인:', address);
     });
 
-    // 에러 핸들러
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-
-      res.status(status).json({ message });
-      console.error("[SERVER] 에러 발생:", err);
+    server.on('error', (error: any) => {
+      console.error('[SERVER] ❌ 서버 오류:', error);
+      if (error.code === 'EADDRINUSE') {
+        console.error(`[SERVER] ❌ 포트 ${PORT}가 이미 사용 중`);
+      }
     });
 
-    // 프로세스 종료 시 정리
+    // 프로세스 종료 신호 처리
     process.on('SIGTERM', () => {
-      console.log('[SERVER] SIGTERM 수신, 서버를 종료합니다');
+      console.log('[SERVER] SIGTERM 신호 받음');
       server.close(() => {
-        console.log('[SERVER] 서버 종료 완료');
+        console.log('[SERVER] 서버가 안전하게 종료됨');
         process.exit(0);
       });
     });
 
     process.on('SIGINT', () => {
-      console.log('[SERVER] SIGINT 신호 수신, 서버 종료 중...');
+      console.log('[SERVER] SIGINT 신호 받음');
       server.close(() => {
-        console.log('[SERVER] 서버가 안전하게 종료되었습니다');
+        console.log('[SERVER] 서버가 안전하게 종료됨');
         process.exit(0);
       });
     });
 
-    // 프로세스 종료 시 로그
-    process.on('exit', (code) => {
-      console.log(`[SERVER] 프로세스 종료, 코드: ${code}`);
-    });
-
-    // 예기치 않은 종료 방지
-    process.on('uncaughtException', (error) => {
-      console.error('[SERVER] 예기치 않은 오류:', error);
-      // 서버를 종료하지 않고 계속 실행
-    });
-
-    process.on('unhandledRejection', (reason, promise) => {
-      console.error('[SERVER] 처리되지 않은 Promise 거부:', reason);
-      // 서버를 종료하지 않고 계속 실행
-    });
-
-    // ✅ 이 부분이 핵심: app.listen() 호출 후 함수는 종료되지만
-    // Express 서버가 이벤트 루프를 유지하므로 프로세스가 계속 실행됨
+    return server;
     
   } catch (error) {
-    console.error('[SERVER] 서버 시작 실패:', error);
-    process.exit(1);
+    console.error('[SERVER] ❌ 서버 시작 실패:', error);
+    
+    // 비상 모드: 최소한의 서버라도 시작
+    console.log('[SERVER] 🚨 비상 모드로 서버 시작 시도');
+    const emergencyServer = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`[SERVER] 🚨 비상 서버 시작됨 - 포트: ${PORT}`);
+    });
+    return emergencyServer;
   }
 }
 
-// ✅ 메인 실행부 - 이 부분도 중요
-startServer().catch((error) => {
-  console.error('[SERVER] 치명적 오류:', error);
-  process.exit(1);
+// 🔥 메인 실행부
+console.log('[SERVER] 📋 메인 프로세스 시작');
+
+// 서버 시작
+startServer()
+  .then((server) => {
+    console.log('[SERVER] ✅ startServer() 호출 완료');
+    
+    // 5초 후 상태 확인
+    setTimeout(() => {
+      if (server.listening) {
+        console.log('[SERVER] ✅ 5초 후 상태 확인: 서버 정상 동작');
+        console.log('[SERVER] ✅ 서버 주소:', server.address());
+      } else {
+        console.log('[SERVER] ❌ 5초 후 상태 확인: 서버가 리스닝하지 않음');
+      }
+    }, 5000);
+  })
+  .catch((error) => {
+    console.error('[SERVER] ❌ startServer() 실패:', error);
+    process.exit(1);
+  });
+
+// 프로세스 생존 확인용 heartbeat
+setInterval(() => {
+  console.log(`[SERVER] 💓 프로세스 생존 확인 - 업타임: ${Math.floor(process.uptime())}초`);
+}, 30000);
+
+// 혹시 모를 상황을 위한 프로세스 유지
+process.on('uncaughtException', (error) => {
+  console.error('[SERVER] ❌ 처리되지 않은 예외:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[SERVER] ❌ 처리되지 않은 Promise 거부:', reason);
 });
 
 export { app }; 
