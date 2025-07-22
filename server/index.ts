@@ -18,18 +18,21 @@ console.log('[SERVER] 환경변수 PORT:', process.env.PORT);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 헬스체크 엔드포인트들
-app.get('/', (req, res) => {
-  console.log('[SERVER] 루트 엔드포인트 호출됨');
+// 정적 파일 서빙 설정 (React 앱)
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// API 라우트들 (API 경로는 /api로 시작)
+app.get('/api/health', (req, res) => {
+  console.log('[SERVER] /api/health 엔드포인트 호출됨');
   res.status(200).json({ 
-    status: 'OK', 
-    message: 'JungwonFlight-Edu Server is running',
+    status: 'healthy',
     port: PORT,
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
   });
 });
 
+// 헬스체크 엔드포인트들
 app.get('/health', (req, res) => {
   console.log('[SERVER] /health 엔드포인트 호출됨');
   res.status(200).json({ 
@@ -40,14 +43,16 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.get('/api/health', (req, res) => {
-  console.log('[SERVER] /api/health 엔드포인트 호출됨');
-  res.status(200).json({ 
-    status: 'healthy',
-    port: PORT,
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
+// React 앱의 모든 라우트를 index.html로 처리 (SPA 지원)
+app.get('*', (req, res) => {
+  // API 요청이 아닌 경우에만 React 앱 서빙
+  if (!req.path.startsWith('/api')) {
+    console.log('[SERVER] React 앱 서빙:', req.path);
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  } else {
+    // API 요청이지만 정의되지 않은 경로
+    res.status(404).json({ error: 'API endpoint not found' });
+  }
 });
 
 console.log('[SERVER] 라우트 등록 완료');
@@ -92,6 +97,7 @@ async function startServer() {
       console.log(`[SERVER] ✅ 서버가 성공적으로 시작되었습니다!`);
       console.log(`[SERVER] ✅ 주소: http://0.0.0.0:${PORT}`);
       console.log(`[SERVER] ✅ 헬스체크 엔드포인트: http://0.0.0.0:${PORT}/health`);
+      console.log(`[SERVER] ✅ React 앱: http://0.0.0.0:${PORT}/`);
       console.log('[SERVER] ✅ Railway 헬스체크 준비 완료');
       console.log('[SERVER] ✅ 서버 상태: RUNNING');
     });

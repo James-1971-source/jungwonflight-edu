@@ -8,8 +8,9 @@
   },
   "scripts": {
     "dev": "tsx watch server/index.ts",
-    "build": "echo '✅ No build needed - using tsx for production'",
-    "start": "tsx server/index.ts",
+    "build": "vite build",
+    "build:client": "vite build",
+    "start": "npm run build:client && tsx server/index.ts",
     "db:migrate": "tsx server/migrate.ts",
     "db:push": "drizzle-kit push:pg",
     "db:seed": "tsx server/seed.ts"
