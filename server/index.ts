@@ -21,18 +21,51 @@ const distPublicPath = path.join(__dirname, '../dist/public');
 const indexHtmlPath = path.join(__dirname, '../dist/index.html');
 const indexHtmlPublicPath = path.join(__dirname, '../dist/public/index.html');
 
-console.log('[SERVER] 파일 경로 확인:');
+console.log('[SERVER] === 파일 경로 확인 시작 ===');
+console.log('[SERVER] 현재 디렉토리:', __dirname);
 console.log('[SERVER] dist 경로:', distPath);
 console.log('[SERVER] dist/public 경로:', distPublicPath);
 console.log('[SERVER] index.html 경로:', indexHtmlPath);
 console.log('[SERVER] index.html (public) 경로:', indexHtmlPublicPath);
 
 // 파일 존재 여부 확인
-console.log('[SERVER] 파일 존재 여부:');
+console.log('[SERVER] === 파일 존재 여부 확인 ===');
 console.log('[SERVER] dist 폴더 존재:', fs.existsSync(distPath));
 console.log('[SERVER] dist/public 폴더 존재:', fs.existsSync(distPublicPath));
 console.log('[SERVER] index.html 존재:', fs.existsSync(indexHtmlPath));
 console.log('[SERVER] index.html (public) 존재:', fs.existsSync(indexHtmlPublicPath));
+
+// 실제 파일 시스템 탐색
+console.log('[SERVER] === 파일 시스템 탐색 ===');
+try {
+  if (fs.existsSync(distPath)) {
+    console.log('[SERVER] dist 폴더 내용:');
+    const distFiles = fs.readdirSync(distPath);
+    distFiles.forEach(file => {
+      const filePath = path.join(distPath, file);
+      const stats = fs.statSync(filePath);
+      console.log(`[SERVER]   - ${file} (${stats.isDirectory() ? '폴더' : '파일'})`);
+    });
+  } else {
+    console.log('[SERVER] ❌ dist 폴더가 존재하지 않습니다!');
+  }
+  
+  if (fs.existsSync(distPublicPath)) {
+    console.log('[SERVER] dist/public 폴더 내용:');
+    const publicFiles = fs.readdirSync(distPublicPath);
+    publicFiles.forEach(file => {
+      const filePath = path.join(distPublicPath, file);
+      const stats = fs.statSync(filePath);
+      console.log(`[SERVER]   - ${file} (${stats.isDirectory() ? '폴더' : '파일'})`);
+    });
+  } else {
+    console.log('[SERVER] ❌ dist/public 폴더가 존재하지 않습니다!');
+  }
+} catch (error) {
+  console.log('[SERVER] ❌ 파일 시스템 탐색 중 오류:', error);
+}
+
+console.log('[SERVER] === 파일 경로 확인 완료 ===');
 
 // 미들웨어 설정
 app.use(express.json());
