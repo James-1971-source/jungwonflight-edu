@@ -13,10 +13,10 @@ const PORT = parseInt(process.env.PORT || '8080');
 console.log('[SERVER] 서버 초기화 시작...');
 
 // 파일 경로 확인 - 서버 초기화 시작 부분에서 실행
-const distPath = path.join(__dirname, '../dist');
-const distPublicPath = path.join(__dirname, '../dist/public');
-const indexHtmlPath = path.join(__dirname, '../dist/index.html');
-const indexHtmlPublicPath = path.join(__dirname, '../dist/public/index.html');
+const distPath = path.join(__dirname, '../client/dist');
+const distPublicPath = path.join(__dirname, '../client/dist/public');
+const indexHtmlPath = path.join(__dirname, '../client/dist/index.html');
+const indexHtmlPublicPath = path.join(__dirname, '../client/dist/public/index.html');
 
 console.log('[SERVER] === 파일 경로 확인 시작 ===');
 console.log('[SERVER] 현재 디렉토리:', __dirname);
