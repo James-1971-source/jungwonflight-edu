@@ -11,11 +11,8 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '8080');
 
 console.log('[SERVER] 서버 초기화 시작...');
-console.log('[SERVER] 포트 설정:', PORT);
-console.log('[SERVER] 실제 사용 포트:', PORT);
-console.log('[SERVER] 환경변수 PORT:', process.env.PORT);
 
-// 파일 경로 확인
+// 파일 경로 확인 - 서버 초기화 시작 부분에서 실행
 const distPath = path.join(__dirname, '../dist');
 const distPublicPath = path.join(__dirname, '../dist/public');
 const indexHtmlPath = path.join(__dirname, '../dist/index.html');
@@ -66,6 +63,10 @@ try {
 }
 
 console.log('[SERVER] === 파일 경로 확인 완료 ===');
+
+console.log('[SERVER] 포트 설정:', PORT);
+console.log('[SERVER] 실제 사용 포트:', PORT);
+console.log('[SERVER] 환경변수 PORT:', process.env.PORT);
 
 // 미들웨어 설정
 app.use(express.json());
