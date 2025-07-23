@@ -10,6 +10,7 @@
     "dev": "tsx watch server/index.ts",
     "build": "cd client && vite build",
     "build:client": "cd client && vite build",
+    "build:all": "npm run build:client",
     "start": "npm run build:client && tsx server/index.ts",
     "db:migrate": "tsx server/migrate.ts",
     "db:push": "drizzle-kit push:pg",
