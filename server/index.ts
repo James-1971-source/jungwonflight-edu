@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 정적 파일 서빙 설정 (React 앱)
-app.use(express.static(path.join(__dirname, '../dist/public')));
+app.use(express.static(path.join(__dirname, '../dist')));
 
 // API 라우트들 (API 경로는 /api로 시작)
 app.get('/api/health', (req, res) => {
@@ -48,7 +48,7 @@ app.get('*', (req, res) => {
   // API 요청이 아닌 경우에만 React 앱 서빙
   if (!req.path.startsWith('/api')) {
     console.log('[SERVER] React 앱 서빙:', req.path);
-    res.sendFile(path.join(__dirname, '../dist/public/index.html'));
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
   } else {
     // API 요청이지만 정의되지 않은 경로
     res.status(404).json({ error: 'API endpoint not found' });
