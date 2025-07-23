@@ -14,7 +14,11 @@
     "declaration": false,
     "removeComments": false,
     "resolveJsonModule": true,
-    "preserveConstEnums": true
+    "preserveConstEnums": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["shared/*"]
+    }
   },
   "include": [
     "server/**/*.ts",
