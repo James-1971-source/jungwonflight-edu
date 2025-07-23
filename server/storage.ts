@@ -19,6 +19,7 @@ const client = postgres(connectionString, {
   connect_timeout: 10,
 });
 const db = drizzle(client);
+const sql = client; // sql 변수 정의
 
 export interface IStorage {
   // Users
