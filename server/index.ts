@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,12 +15,39 @@ console.log('[SERVER] 포트 설정:', PORT);
 console.log('[SERVER] 실제 사용 포트:', PORT);
 console.log('[SERVER] 환경변수 PORT:', process.env.PORT);
 
+// 파일 경로 확인
+const distPath = path.join(__dirname, '../dist');
+const distPublicPath = path.join(__dirname, '../dist/public');
+const indexHtmlPath = path.join(__dirname, '../dist/index.html');
+const indexHtmlPublicPath = path.join(__dirname, '../dist/public/index.html');
+
+console.log('[SERVER] 파일 경로 확인:');
+console.log('[SERVER] dist 경로:', distPath);
+console.log('[SERVER] dist/public 경로:', distPublicPath);
+console.log('[SERVER] index.html 경로:', indexHtmlPath);
+console.log('[SERVER] index.html (public) 경로:', indexHtmlPublicPath);
+
+// 파일 존재 여부 확인
+console.log('[SERVER] 파일 존재 여부:');
+console.log('[SERVER] dist 폴더 존재:', fs.existsSync(distPath));
+console.log('[SERVER] dist/public 폴더 존재:', fs.existsSync(distPublicPath));
+console.log('[SERVER] index.html 존재:', fs.existsSync(indexHtmlPath));
+console.log('[SERVER] index.html (public) 존재:', fs.existsSync(indexHtmlPublicPath));
+
 // 미들웨어 설정
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 정적 파일 서빙 설정 (React 앱)
-app.use(express.static(path.join(__dirname, '../dist')));
+// 정적 파일 서빙 설정 (React 앱) - 두 경로 모두 시도
+if (fs.existsSync(distPublicPath)) {
+  console.log('[SERVER] dist/public 경로로 정적 파일 서빙 설정');
+  app.use(express.static(distPublicPath));
+} else if (fs.existsSync(distPath)) {
+  console.log('[SERVER] dist 경로로 정적 파일 서빙 설정');
+  app.use(express.static(distPath));
+} else {
+  console.log('[SERVER] ❌ 빌드된 파일을 찾을 수 없습니다!');
+}
 
 // API 라우트들 (API 경로는 /api로 시작)
 app.get('/api/health', (req, res) => {
@@ -48,7 +76,21 @@ app.get('*', (req, res) => {
   // API 요청이 아닌 경우에만 React 앱 서빙
   if (!req.path.startsWith('/api')) {
     console.log('[SERVER] React 앱 서빙:', req.path);
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+    
+    // 동적으로 index.html 경로 결정
+    let indexHtmlPath;
+    if (fs.existsSync(indexHtmlPublicPath)) {
+      indexHtmlPath = indexHtmlPublicPath;
+      console.log('[SERVER] dist/public/index.html 사용');
+    } else if (fs.existsSync(indexHtmlPath)) {
+      indexHtmlPath = indexHtmlPath;
+      console.log('[SERVER] dist/index.html 사용');
+    } else {
+      console.log('[SERVER] ❌ index.html 파일을 찾을 수 없습니다!');
+      return res.status(404).json({ error: 'React app not found' });
+    }
+    
+    res.sendFile(indexHtmlPath);
   } else {
     // API 요청이지만 정의되지 않은 경로
     res.status(404).json({ error: 'API endpoint not found' });
